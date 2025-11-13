@@ -2,9 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\V1\AuthController;
+use App\Http\Controllers\V1\ProductController;
+use App\Http\Controllers\V1\Admin\CategoryController as AdminCategoryController;
 
 // ==========================================
 // API V1
@@ -24,9 +24,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
 
-    // Categorias
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::get('/categories/{id}', [CategoryController::class, 'show']);
+    // Categorias públicas
+    Route::get('/categories', [AdminCategoryController::class, 'index']);
+    Route::get('/categories/{category}', [AdminCategoryController::class, 'show']);
 
     // ==========================================
     // ROTAS PROTEGIDAS (Requer autenticação)
@@ -40,6 +40,10 @@ Route::prefix('v1')->group(function () {
             return $request->user();
         });
 
+        // ------------------------------------------------------------------
+        // MÓDULO ADMIN
+        // ------------------------------------------------------------------
+        
         // Produtos (Admin)
         Route::middleware('admin')->group(function () {
             Route::post('/products', [ProductController::class, 'store']);
@@ -47,12 +51,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         });
 
-        // Categorias (Admin)
-        Route::middleware('admin')->group(function () {
-            Route::post('/categories', [CategoryController::class, 'store']);
-            Route::put('/categories/{id}', [CategoryController::class, 'update']);
-            Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
-        });
+        // Categorias Admin (CRUD completo)
+        Route::resource('admin/categories', AdminCategoryController::class)->except(['index', 'show']);
     });
 });
 
