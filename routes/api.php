@@ -18,16 +18,16 @@ Route::prefix('v1')->group(function () {
     // ==========================================
 
     // Autenticação
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);//ok
+    Route::post('/login', [AuthController::class, 'login']);//ok
 
     // Produtos (Leitura pública)
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{product}', [ProductController::class, 'show']);
+    Route::get('/products', [ProductController::class, 'index']);//ok
+    Route::get('/products/{product}', [ProductController::class, 'show']);//ok
 
     // Categorias (Leitura pública)
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::get('/categories/{category}', [CategoryController::class, 'show']);
+    Route::get('/categories', [CategoryController::class, 'index']);//ok
+    Route::get('/categories/{category}', [CategoryController::class, 'show']);//ok
 
     // ==========================================
     // ROTAS PROTEGIDAS (Requer autenticação)

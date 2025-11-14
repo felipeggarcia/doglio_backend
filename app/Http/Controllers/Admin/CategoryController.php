@@ -21,7 +21,7 @@ class CategoryController extends Controller
         $this->middleware('auth:sanctum')->except('index', 'show');
         $this->middleware(function ($request, $next) {
             if ($request->user() && $request->user()->role !== 'admin') {
-                return response()->json(['message' => 'Acesso negado. Apenas administradores podem gerenciar categorias.'], 403);
+                return response()->json(['message' => 'Access denied. Only administrators can manage categories.'], 403);
             }
             return $next($request);
         })->except('index', 'show'); // Checagem para Admin em store, update, destroy

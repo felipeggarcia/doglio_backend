@@ -48,17 +48,20 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-
-        
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
+        
         $user = User::where('email', $request->email)->first();
+        
         if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
-            ]);
+            return response()->json([
+                'message' => 'The provided credentials are incorrect.',
+                'errors' => [
+                    'email' => ['Invalid email or password.']
+                ]
+            ], 401);
         }
 
         // Atualiza o last_login

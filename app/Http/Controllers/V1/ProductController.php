@@ -167,7 +167,7 @@ class ProductController extends Controller
             // Valida se não excede o limite de 6 imagens
             if ($currentCount + count($request->file('images')) > 6) {
                 return response()->json([
-                    'message' => 'Limite máximo de 6 imagens por produto excedido.',
+                    'message' => 'Maximum limit of 6 images per product exceeded.',
                     'current_count' => $currentCount,
                     'max_allowed' => 6
                 ], 422);
