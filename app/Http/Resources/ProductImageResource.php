@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Vinkla\Hashids\Facades\Hashids;
 
-class CategoryResource extends JsonResource
+class ProductImageResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,10 +17,9 @@ class CategoryResource extends JsonResource
     {
         return [
             'id' => Hashids::encode($this->id),
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'is_highlighted' => (bool) $this->is_highlighted,
-            'products_count' => $this->when(isset($this->products_count), $this->products_count),
+            'url' => url('storage/' . $this->path),
+            'order' => $this->order,
+            'is_primary' => $this->is_primary,
         ];
     }
 }

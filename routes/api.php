@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\V1\AuthController;
 use App\Http\Controllers\V1\ProductController;
 use App\Http\Controllers\V1\CategoryController;
+use App\Http\Resources\UserResource;
 
 // ==========================================
 // API V1
@@ -22,7 +23,7 @@ Route::prefix('v1')->group(function () {
 
     // Produtos (Leitura pública)
     Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
 
     // Categorias (Leitura pública)
     Route::get('/categories', [CategoryController::class, 'index']);
@@ -37,7 +38,7 @@ Route::prefix('v1')->group(function () {
         // Autenticação
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', function (Request $request) {
-            return $request->user();
+            return new UserResource($request->user());
         });
 
         // ------------------------------------------------------------------
@@ -47,8 +48,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('admin')->group(function () {
             // Produtos
             Route::post('/products', [ProductController::class, 'store']);
-            Route::put('/products/{id}', [ProductController::class, 'update']);
-            Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+            Route::put('/products/{product}', [ProductController::class, 'update']);
+            Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 
             // Categorias
             Route::post('/categories', [CategoryController::class, 'store']);
