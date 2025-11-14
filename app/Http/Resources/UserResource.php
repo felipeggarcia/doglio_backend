@@ -15,7 +15,7 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             'id' => Hashids::encode($this->id),
             'name' => $this->name,
             'email' => $this->email,
@@ -23,5 +23,16 @@ class UserResource extends JsonResource
             'city' => $this->city,
             'state' => $this->state,
         ];
+
+        // Campos adicionais para admin
+        if ($request->user() && $request->user()->role === 'admin') {
+            $data['last_login'] = $this->last_login?->format('Y-m-d H:i:s');
+            $data['email_verified_at'] = $this->email_verified_at?->format('Y-m-d H:i:s');
+            $data['created_at'] = $this->created_at->format('Y-m-d H:i:s');
+            $data['updated_at'] = $this->updated_at->format('Y-m-d H:i:s');
+            $data['deleted_at'] = $this->deleted_at?->format('Y-m-d H:i:s');
+        }
+
+        return $data;
     }
 }

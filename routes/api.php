@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\V1\AuthController;
 use App\Http\Controllers\V1\ProductController;
 use App\Http\Controllers\V1\CategoryController;
+use App\Http\Controllers\V1\UserController;
 use App\Http\Resources\UserResource;
 
 // ==========================================
@@ -36,10 +37,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         
         // Autenticação
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/user', function (Request $request) {
-            return new UserResource($request->user());
-        });
+        Route::post('/logout', [AuthController::class, 'logout']);//ok
+        Route::get('/user', [AuthController::class, 'user']);//ok
 
         // ------------------------------------------------------------------
         // MÓDULO ADMIN (Apenas administradores)
@@ -55,6 +54,13 @@ Route::prefix('v1')->group(function () {
             Route::post('/categories', [CategoryController::class, 'store']);
             Route::put('/categories/{category}', [CategoryController::class, 'update']);
             Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+            // Usuários (Gerenciamento)
+            Route::get('/users', [UserController::class, 'index']); //ok
+            Route::post('/users', [UserController::class, 'store']);
+            Route::get('/users/{user}', [UserController::class, 'show']);
+            Route::put('/users/{user}', [UserController::class, 'update']);
+            Route::delete('/users/{user}', [UserController::class, 'destroy']);
         });
     });
 });
