@@ -61,7 +61,7 @@ class ProductController extends Controller
             'stock_quantity' => 'required|integer|min:0',
             'is_highlighted' => 'boolean',
             'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
+            'category_ids.*' => 'string',
             'images' => 'nullable|array|max:6',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -75,7 +75,12 @@ class ProductController extends Controller
         ]);
 
         if ($request->has('category_ids')) {
-            $product->categories()->sync($request->category_ids);
+            // Decodifica Hashids para IDs reais
+            $realIds = collect($request->category_ids)->map(function ($hashid) {
+                return \Vinkla\Hashids\Facades\Hashids::decode($hashid)[0] ?? null;
+            })->filter()->toArray();
+            
+            $product->categories()->sync($realIds);
         }
 
         // Upload de imagens
@@ -116,11 +121,11 @@ class ProductController extends Controller
             'stock_quantity' => 'sometimes|integer|min:0',
             'is_highlighted' => 'boolean',
             'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
+            'category_ids.*' => 'string',
             'images' => 'nullable|array|max:6',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
             'remove_images' => 'nullable|array',
-            'remove_images.*' => 'integer',
+            'remove_images.*' => 'string',
         ]);
 
         $product->update($request->only([
@@ -132,12 +137,22 @@ class ProductController extends Controller
         ]));
 
         if ($request->has('category_ids')) {
-            $product->categories()->sync($request->category_ids);
+            // Decodifica Hashids para IDs reais
+            $realIds = collect($request->category_ids)->map(function ($hashid) {
+                return \Vinkla\Hashids\Facades\Hashids::decode($hashid)[0] ?? null;
+            })->filter()->toArray();
+            
+            $product->categories()->sync($realIds);
         }
 
         // Remover imagens antigas se solicitado
         if ($request->has('remove_images')) {
-            ProductImage::whereIn('id', $request->remove_images)
+            // Decodifica Hashids para IDs reais
+            $realImageIds = collect($request->remove_images)->map(function ($hashid) {
+                return \Vinkla\Hashids\Facades\Hashids::decode($hashid)[0] ?? null;
+            })->filter()->toArray();
+            
+            ProductImage::whereIn('id', $realImageIds)
                 ->where('product_id', $product->id)
                 ->each(function ($image) {
                     $image->delete(); // Usa o boot do model para deletar o arquivo
