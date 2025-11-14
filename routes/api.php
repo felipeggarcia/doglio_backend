@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\V1\AuthController;
 use App\Http\Controllers\V1\ProductController;
-use App\Http\Controllers\V1\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\V1\CategoryController;
 
 // ==========================================
 // API V1
@@ -20,13 +20,13 @@ Route::prefix('v1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
-    // Produtos
+    // Produtos (Leitura pública)
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
 
-    // Categorias públicas
-    Route::get('/categories', [AdminCategoryController::class, 'index']);
-    Route::get('/categories/{category}', [AdminCategoryController::class, 'show']);
+    // Categorias (Leitura pública)
+    Route::get('/categories', [CategoryController::class, 'index']);
+    Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
     // ==========================================
     // ROTAS PROTEGIDAS (Requer autenticação)
@@ -41,18 +41,20 @@ Route::prefix('v1')->group(function () {
         });
 
         // ------------------------------------------------------------------
-        // MÓDULO ADMIN
+        // MÓDULO ADMIN (Apenas administradores)
         // ------------------------------------------------------------------
         
-        // Produtos (Admin)
         Route::middleware('admin')->group(function () {
+            // Produtos
             Route::post('/products', [ProductController::class, 'store']);
             Route::put('/products/{id}', [ProductController::class, 'update']);
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-        });
 
-        // Categorias Admin (CRUD completo)
-        Route::resource('admin/categories', AdminCategoryController::class)->except(['index', 'show']);
+            // Categorias
+            Route::post('/categories', [CategoryController::class, 'store']);
+            Route::put('/categories/{category}', [CategoryController::class, 'update']);
+            Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+        });
     });
 });
 

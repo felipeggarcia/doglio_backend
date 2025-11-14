@@ -33,7 +33,6 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::all();
-        // Usamos o CategoryResource que você já fez!
         return CategoryResource::collection($categories);
     }
 
