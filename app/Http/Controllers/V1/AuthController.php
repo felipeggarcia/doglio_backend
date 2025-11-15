@@ -37,10 +37,13 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'success' => true,
             'message' => 'User registered successfully',
-            'user' => new UserResource($user),
-            'access_token' => $token,
-            'token_type' => 'Bearer',
+            'data' => [
+                'user' => new UserResource($user),
+                'token' => $token,
+                'token_type' => 'Bearer'
+            ]
         ], 201);
     }
 
@@ -58,9 +61,11 @@ class AuthController extends Controller
         
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'The provided credentials are incorrect.',
-                'errors' => [
-                    'email' => ['Invalid email or password.']
+                'success' => false,
+                'message' => 'Invalid credentials',
+                'error' => [
+                    'code' => 'INVALID_CREDENTIALS',
+                    'details' => 'The provided email or password is incorrect'
                 ]
             ], 401);
         }
@@ -68,9 +73,11 @@ class AuthController extends Controller
         // Verifica se o usuário está ativo
         if (!$user->is_active) {
             return response()->json([
-                'message' => 'Your account has been deactivated. Please contact support.',
-                'errors' => [
-                    'email' => ['Account is inactive.']
+                'success' => false,
+                'message' => 'Account inactive',
+                'error' => [
+                    'code' => 'ACCOUNT_INACTIVE',
+                    'details' => 'Your account has been deactivated. Please contact support'
                 ]
             ], 403);
         }
@@ -81,9 +88,12 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'success' => true,
+            'message' => 'Login successful',
             'data' => [
                 'user' => new UserResource($user),
                 'token' => $token,
+                'token_type' => 'Bearer'
             ]
         ]);
     }
@@ -96,7 +106,8 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Logged out successfully',
+            'success' => true,
+            'message' => 'Logged out successfully'
         ]);
     }
 

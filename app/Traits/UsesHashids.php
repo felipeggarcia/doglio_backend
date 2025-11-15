@@ -26,24 +26,34 @@ trait UsesHashids
      */
     public function resolveRouteBinding($value, $field = null)
     {
+        $id = null;
+        
         // Se hashids está desabilitado, usa o ID diretamente
         if (!config('app.use_hashids', true)) {
-            return $this->where($this->getRouteKeyName(), $value)->first();
+            $id = $value;
+        } else {
+            // Decodifica o Hashid para obter o ID real
+            $decoded = Hashids::decode($value);
+
+            // Se a decodificação falhar ou retornar vazio, lança exceção
+            if (empty($decoded)) {
+                throw (new ModelNotFoundException())->setModel(get_class($this), [$value]);
+            }
+
+            // Pega o primeiro valor decodificado (ID real)
+            $id = $decoded[0];
         }
-
-        // Decodifica o Hashid para obter o ID real
-        $decoded = Hashids::decode($value);
-
-        // Se a decodificação falhar ou retornar vazio, lança exceção
-        if (empty($decoded)) {
-            throw new ModelNotFoundException();
-        }
-
-        // Pega o primeiro valor decodificado (ID real)
-        $id = $decoded[0];
 
         // Busca o model pelo ID real
-        return $this->where($this->getRouteKeyName(), $id)->first();
+        // Não usamos withoutGlobalScopes() para respeitar soft deletes
+        $model = $this->where($this->getRouteKeyName(), $id)->first();
+        
+        // Se não encontrou ou está soft deleted, lança ModelNotFoundException
+        if (!$model) {
+            throw (new ModelNotFoundException())->setModel(get_class($this), [$value]);
+        }
+        
+        return $model;
     }
 
     /**

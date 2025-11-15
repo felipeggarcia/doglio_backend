@@ -17,7 +17,12 @@ class AdminMiddleware
     {
         if (!$request->user() || $request->user()->role !== 'admin') {
             return response()->json([
-                'message' => 'Unauthorized. Admin access required.',
+                'success' => false,
+                'message' => 'Forbidden',
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'details' => 'Admin access required'
+                ]
             ], 403);
         }
 

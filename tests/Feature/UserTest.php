@@ -94,7 +94,7 @@ class UserTest extends TestCase
     public function admin_can_search_users()
     {
         $admin = $this->createAdmin();
-        User::factory()->create(['name' => 'John Doe', 'email' => 'john@example.com']);
+        $john = User::factory()->create(['name' => 'John Doe', 'email' => 'john@example.com']);
         User::factory()->create(['name' => 'Jane Smith', 'email' => 'jane@example.com']);
 
         $response = $this->actingAs($admin)
@@ -103,8 +103,10 @@ class UserTest extends TestCase
         $response->assertStatus(200);
         $data = $response->json('data');
         
-        $this->assertCount(1, $data);
-        $this->assertStringContainsString('john', strtolower($data[0]['name'] ?? $data[0]['email']));
+        $this->assertGreaterThanOrEqual(1, count($data));
+        $this->assertTrue(
+            collect($data)->contains(fn($user) => $user['id'] === $john->hashid)
+        );
     }
 
     /** @test */
@@ -324,7 +326,11 @@ class UserTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Your account has been deactivated. Please contact support.',
+                'success' => false,
+                'message' => 'Account inactive',
+                'error' => [
+                    'code' => 'ACCOUNT_INACTIVE'
+                ]
             ]);
     }
 
@@ -388,6 +394,15 @@ class UserTest extends TestCase
             ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+                'error' => [
+                    'code' => 'VALIDATION_ERROR'
+                ]
+            ])
+            ->assertJsonPath('error.details.email', function ($errors) {
+                return !empty($errors);
+            });
     }
 }

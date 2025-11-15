@@ -25,17 +25,23 @@ class AuthTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonStructure([
+                'success',
                 'message',
-                'user' => ['id', 'name', 'email', 'role'],
-                'access_token',
-                'token_type',
+                'data' => [
+                    'user' => ['id', 'name', 'email', 'role'],
+                    'token',
+                    'token_type'
+                ]
             ])
             ->assertJson([
-                'user' => [
-                    'email' => 'test@example.com',
-                    'role' => 'customer',
-                ],
-                'token_type' => 'Bearer',
+                'success' => true,
+                'data' => [
+                    'user' => [
+                        'email' => 'test@example.com',
+                        'role' => 'customer',
+                    ],
+                    'token_type' => 'Bearer',
+                ]
             ]);
 
         $this->assertDatabaseHas('users', [
@@ -55,7 +61,16 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['password']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+                'error' => [
+                    'code' => 'VALIDATION_ERROR'
+                ]
+            ])
+            ->assertJsonPath('error.details.password', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test */
@@ -71,7 +86,16 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+                'error' => [
+                    'code' => 'VALIDATION_ERROR'
+                ]
+            ])
+            ->assertJsonPath('error.details.email', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test */
@@ -90,10 +114,16 @@ class AuthTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
+                'success',
+                'message',
                 'data' => [
                     'user' => ['id', 'name', 'email'],
                     'token',
-                ],
+                    'token_type'
+                ]
+            ])
+            ->assertJson([
+                'success' => true
             ]);
 
         $user->refresh();
@@ -115,7 +145,11 @@ class AuthTest extends TestCase
 
         $response->assertStatus(401)
             ->assertJson([
-                'message' => 'The provided credentials are incorrect.',
+                'success' => false,
+                'message' => 'Invalid credentials',
+                'error' => [
+                    'code' => 'INVALID_CREDENTIALS'
+                ]
             ]);
     }
 
@@ -135,7 +169,11 @@ class AuthTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Your account has been deactivated. Please contact support.',
+                'success' => false,
+                'message' => 'Account inactive',
+                'error' => [
+                    'code' => 'ACCOUNT_INACTIVE'
+                ]
             ]);
     }
 
@@ -149,7 +187,10 @@ class AuthTest extends TestCase
             ->postJson('/api/v1/logout');
 
         $response->assertStatus(200)
-            ->assertJson(['message' => 'Logged out successfully']);
+            ->assertJson([
+                'success' => true,
+                'message' => 'Logged out successfully'
+            ]);
 
         $this->assertCount(0, $user->tokens);
     }
@@ -178,6 +219,12 @@ class AuthTest extends TestCase
         $response = $this->getJson('/api/v1/user');
 
         $response->assertStatus(401)
-            ->assertJson(['message' => 'Unauthenticated. Please login first.']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Authentication required',
+                'error' => [
+                    'code' => 'UNAUTHENTICATED'
+                ]
+            ]);
     }
 }

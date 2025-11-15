@@ -2,6 +2,21 @@
 
 A RESTful API built with Laravel 12 for an e-commerce system with product catalog, categories, and order management.
 
+## Key Features
+
+- **JWT Authentication** with Laravel Sanctum
+- **Product Management** with advanced filtering and multi-image support (up to 6 images)
+- **Category System** with many-to-many relationships
+- **User Management** (Admin) with role-based access control
+- **Order System** with order items tracking
+- **Advanced Filtering** - 10+ filter options for products
+- **Soft Deletes** on all major tables
+- **Hashids Support** - Configurable ID obfuscation
+- **RESTful Standards** - Consistent response format across all endpoints
+- **Test Coverage** - 72 tests with 285 assertions
+- **API Versioning** (v1)
+- **Smart Defaults** - Hides out-of-stock products, prioritizes highlighted items
+
 ## Quick Start
 
 ### Prerequisites
@@ -349,27 +364,28 @@ php artisan serve
 
 ## Funcionalidades
 
-- ✅ Autenticação JWT com Laravel Sanctum
-- ✅ CRUD completo de Produtos
-  - ✅ Upload múltiplo de imagens (até 6 por produto)
-  - ✅ Filtros avançados (preço, estoque, categorias, busca)
-  - ✅ Ordenação inteligente (destacados primeiro, depois por estoque)
-  - ✅ Esconde produtos sem estoque por padrão
-- ✅ CRUD completo de Categorias
-- ✅ CRUD completo de Usuários (Admin)
-  - ✅ Ativar/desativar usuários
-  - ✅ Soft deletes
-  - ✅ Filtros por role e status
-- ✅ Sistema de Pedidos
-- ✅ Relacionamento muitos-para-muitos (Produtos ↔ Categorias)
-- ✅ Soft Deletes em todas as tabelas
-- ✅ Controle de acesso por roles (admin/customer)
-- ✅ Versionamento de API (v1)
-- ✅ Form Requests para validação
-- ✅ API Resources para formatação de resposta
-- ✅ Hashids configurável (via .env)
-- ✅ ForceJsonResponse middleware
-- ✅ Tratamento de erros de autenticação em JSON
+- Autenticação JWT com Laravel Sanctum
+- CRUD completo de Produtos
+  - Upload múltiplo de imagens (até 6 por produto)
+  - Filtros avançados (preço, estoque, categorias, busca)
+  - Ordenação inteligente (destacados primeiro, depois por estoque)
+  - Esconde produtos sem estoque por padrão
+- CRUD completo de Categorias
+- CRUD completo de Usuários (Admin)
+  - Ativar/desativar usuários
+  - Soft deletes
+  - Filtros por role e status
+- Sistema de Pedidos
+- Relacionamento muitos-para-muitos (Produtos ↔ Categorias)
+- Soft Deletes em todas as tabelas
+- Controle de acesso por roles (admin/customer)
+- Versionamento de API (v1)
+- Form Requests para validação
+- API Resources para formatação de resposta
+- Hashids configurável (via .env)
+- ForceJsonResponse middleware
+- **Tratamento de erros RESTful padronizado**
+- **72 testes automatizados (285 assertions)**
 
 ## Usuários de Teste
 
@@ -405,34 +421,189 @@ php artisan migrate:fresh --seed
 php artisan ide-helper:generate
 ```
 
+---
+
+## API Response Format (RESTful Standard)
+
+All API responses follow a consistent RESTful format:
+
+### Success Response
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": {
+    // Response data
+  }
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "error": {
+    "code": "ERROR_CODE",
+    "details": "Detailed error information or validation errors object"
+  }
+}
+```
+
+### HTTP Status Codes
+- `200` - Success (GET, PUT, DELETE)
+- `201` - Created (POST)
+- `401` - Unauthenticated
+- `403` - Forbidden / Account Inactive
+- `404` - Resource Not Found / Endpoint Not Found
+- `405` - Method Not Allowed
+- `422` - Validation Error
+- `500` - Internal Server Error
+
+### Error Codes
+- `UNAUTHENTICATED` - User must be authenticated
+- `FORBIDDEN` - User lacks permissions
+- `INVALID_CREDENTIALS` - Wrong email/password
+- `ACCOUNT_INACTIVE` - User account is deactivated
+- `RESOURCE_NOT_FOUND` - Model not found or soft deleted (e.g., product doesn't exist)
+- `ENDPOINT_NOT_FOUND` - API route doesn't exist
+- `METHOD_NOT_ALLOWED` - HTTP method not supported for this endpoint
+- `VALIDATION_ERROR` - Request validation failed (details contains field errors)
+- `IMAGE_LIMIT_EXCEEDED` - Product image limit exceeded (max 6)
+- `INTERNAL_ERROR` - Server error (with debug details in development mode)
+
+### Examples
+
+**Successful Login**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "abc123",
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "token": "2|randomtoken...",
+    "token_type": "Bearer"
+  }
+}
+```
+
+**Product Not Found**
+```json
+{
+  "success": false,
+  "message": "Product not found",
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "details": "The requested product does not exist or has been deleted"
+  }
+}
+```
+
+**Validation Error**
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "details": {
+      "email": ["The email field is required."],
+      "password": ["The password must be at least 8 characters."]
+    }
+  }
+}
+```
+
+**Image Limit Exceeded**
+```json
+{
+  "success": false,
+  "message": "Image limit exceeded",
+  "error": {
+    "code": "IMAGE_LIMIT_EXCEEDED",
+    "details": "Maximum limit of 6 images per product exceeded",
+    "current_count": 4,
+    "max_allowed": 6
+  }
+}
+```
+
+---
+
+## Testing
+
+The project includes a comprehensive test suite with 72 tests covering:
+- Authentication flows (register, login, logout)
+- Product CRUD operations
+- Error handling (404, 401, 422, etc.)
+- Soft deletes
+- Image upload validation
+- User management
+- Advanced product filtering
+
+**Run all tests:**
+```bash
+php artisan test
+```
+
+**Run specific test file:**
+```bash
+php artisan test --filter=ProductErrorHandlingTest
+```
+
+**Run with coverage:**
+```bash
+php artisan test --coverage
+```
+
+---
+
 ## Changelog (15/11/2025)
 
 ### Adicionado
+- **API Response Standardization (RESTful)**
+  - Consistent response format for all endpoints
+  - 10 standardized error codes
+  - Proper HTTP status codes for all scenarios
+  - Distinguished error types (RESOURCE_NOT_FOUND vs ENDPOINT_NOT_FOUND)
 - Sistema de múltiplas imagens por produto (até 6)
-- Filtros avançados em produtos:
-  - Busca por nome/descrição
-  - Filtro por faixa de preço
-  - Filtro por estoque
-  - Filtro por categoria
-  - Ordenação customizável
+- Filtros avançados em produtos (10+ filtros)
 - CRUD completo de usuários (admin)
 - Campo `is_active` em usuários
 - Soft deletes em usuários
 - Middleware ForceJsonResponse
 - Sistema de Hashids configurável via `.env`
+- **Comprehensive test suite (72 tests, 285 assertions)**
 - Tratamento de erros de autenticação em JSON
 - Rota GET /api/v1/user para perfil do usuário
 
 ### Modificado
+- **Exception handling in bootstrap/app.php**
+  - Smart detection of ModelNotFoundException via getPrevious()
+  - Handles Laravel's automatic exception conversion
+- **All controller responses standardized**
+  - AuthController: register, login, logout
+  - ProductController: image limit errors, delete responses
+  - UserController & CategoryController: delete responses
 - ProductController index com 10+ filtros
 - Produtos sem estoque ficam ocultos por padrão
 - Ordenação padrão: destacados primeiro, depois por estoque
-- AuthController retorna JSON em vez de redirect
+- **UsesHashids trait**: Properly throws ModelNotFoundException for soft deleted models
 - Resources agora usam $this->hashid (respeita configuração)
+- **All test files updated to match new RESTful format**
 
 ### Corrigido
 - Erro "Route [login] not defined" em rotas protegidas
+- **Product soft delete now returns proper error message**
+  - Before: "Endpoint not found"
+  - After: "Product not found - The requested product does not exist or has been deleted"
 - IDs agora podem ser normais ou hashids (configurável)
+- **Exception conversion handling** (ModelNotFoundException → NotFoundHttpException)
+- **Validation error responses** now include error code and proper structure
 
 ## License
 

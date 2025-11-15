@@ -55,7 +55,9 @@ class CategoryController extends Controller
             'slug' => \Str::slug($request->name)
         ]);
         
-        return new CategoryResource($category);
+        return (new CategoryResource($category))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
@@ -83,7 +85,8 @@ class CategoryController extends Controller
         $category->delete();
 
         return response()->json([
+            'success' => true,
             'message' => 'Category deleted successfully'
-        ], 200);
+        ]);
     }
 }

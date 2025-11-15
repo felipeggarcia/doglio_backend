@@ -127,7 +127,16 @@ class ProductImageTest extends TestCase
             ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['images']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+                'error' => [
+                    'code' => 'VALIDATION_ERROR'
+                ]
+            ])
+            ->assertJsonPath('error.details.images', function ($errors) {
+                return !empty($errors);
+            });
     }
 
     /** @test */
@@ -196,7 +205,11 @@ class ProductImageTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'Maximum limit of 6 images per product exceeded.',
+                'success' => false,
+                'message' => 'Image limit exceeded',
+                'error' => [
+                    'code' => 'IMAGE_LIMIT_EXCEEDED'
+                ]
             ]);
     }
 
@@ -433,7 +446,18 @@ class ProductImageTest extends TestCase
             ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['images.0']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+                'error' => [
+                    'code' => 'VALIDATION_ERROR'
+                ]
+            ])
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['images.0']
+                ]
+            ]);
     }
 
     /** @test */
@@ -453,6 +477,17 @@ class ProductImageTest extends TestCase
             ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['images.0']);
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+                'error' => [
+                    'code' => 'VALIDATION_ERROR'
+                ]
+            ])
+            ->assertJsonStructure([
+                'error' => [
+                    'details' => ['images.0']
+                ]
+            ]);
     }
 }
