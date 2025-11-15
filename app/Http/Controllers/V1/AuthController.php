@@ -31,6 +31,7 @@ class AuthController extends Controller
             'role' => 'customer', // Default role
             'city' => $request->city,
             'state' => $request->state,
+            'is_active' => true,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -62,6 +63,16 @@ class AuthController extends Controller
                     'email' => ['Invalid email or password.']
                 ]
             ], 401);
+        }
+
+        // Verifica se o usuário está ativo
+        if (!$user->is_active) {
+            return response()->json([
+                'message' => 'Your account has been deactivated. Please contact support.',
+                'errors' => [
+                    'email' => ['Account is inactive.']
+                ]
+            ], 403);
         }
 
         // Atualiza o last_login

@@ -31,8 +31,78 @@ class ProductController extends Controller
         }
 
         // Busca por nome
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        // Busca por descrição
+        if ($request->has('description')) {
+            $query->where('description', 'like', '%' . $request->description . '%');
+        }
+
+        // Busca genérica (nome OU descrição)
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Filtro por preço mínimo
+        if ($request->has('price_min')) {
+            $query->where('price', '>=', $request->price_min);
+        }
+
+        // Filtro por preço máximo
+        if ($request->has('price_max')) {
+            $query->where('price', '<=', $request->price_max);
+        }
+
+        // Filtro por faixa de preço
+        if ($request->has('price_from') && $request->has('price_to')) {
+            $query->whereBetween('price', [$request->price_from, $request->price_to]);
+        }
+
+        // Filtro por quantidade em estoque mínima
+        if ($request->has('stock_min')) {
+            $query->where('stock_quantity', '>=', $request->stock_min);
+        }
+
+        // Filtro por quantidade em estoque máxima
+        if ($request->has('stock_max')) {
+            $query->where('stock_quantity', '<=', $request->stock_max);
+        }
+
+        // Filtro de produtos em estoque (maior que 0)
+        if ($request->has('in_stock') && $request->boolean('in_stock')) {
+            $query->where('stock_quantity', '>', 0);
+        }
+
+        // Filtro de produtos sem estoque
+        if ($request->has('out_of_stock') && $request->boolean('out_of_stock')) {
+            $query->where('stock_quantity', '=', 0);
+        }
+
+        // Por padrão, esconde produtos sem estoque (a menos que out_of_stock=true)
+        if (!$request->has('out_of_stock') || !$request->boolean('out_of_stock')) {
+            $query->where('stock_quantity', '>', 0);
+        }
+
+        // Ordenação
+        if ($request->has('sort_by')) {
+            $sortBy = $request->sort_by;
+            $sortOrder = $request->get('sort_order', 'asc'); // asc ou desc
+
+            // Valida campos permitidos para ordenação
+            $allowedSorts = ['name', 'price', 'stock_quantity', 'created_at', 'updated_at'];
+            
+            if (in_array($sortBy, $allowedSorts)) {
+                $query->orderBy($sortBy, $sortOrder);
+            }
+        } else {
+            // Ordenação padrão: destacados primeiro, depois por estoque (maior para menor)
+            $query->orderBy('is_highlighted', 'desc')
+                  ->orderBy('stock_quantity', 'desc');
         }
 
         $products = $query->paginate($request->get('per_page', 15));

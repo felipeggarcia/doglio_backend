@@ -47,6 +47,7 @@ class UserController extends Controller
             'role' => 'required|in:admin,customer',
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:2',
+            'is_active' => 'boolean',
         ]);
 
         $user = User::create([
@@ -56,6 +57,7 @@ class UserController extends Controller
             'role' => $request->role,
             'city' => $request->city,
             'state' => $request->state,
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return new UserResource($user);
@@ -81,9 +83,10 @@ class UserController extends Controller
             'role' => 'sometimes|in:admin,customer',
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:2',
+            'is_active' => 'boolean',
         ]);
 
-        $data = $request->only(['name', 'email', 'role', 'city', 'state']);
+        $data = $request->only(['name', 'email', 'role', 'city', 'state', 'is_active']);
 
         if ($request->has('password')) {
             $data['password'] = Hash::make($request->password);

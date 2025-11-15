@@ -24,7 +24,7 @@ Route::prefix('v1')->group(function () {
 
     // Produtos (Leitura pública)
     Route::get('/products', [ProductController::class, 'index']);//ok
-    Route::get('/products/{product}', [ProductController::class, 'show']);//ok
+    Route::get('/ra fazer de filtro no banco de dados tem que se possivel mandando parametros get/{product}', [ProductController::class, 'show']);//ok
 
     // Categorias (Leitura pública)
     Route::get('/categories', [CategoryController::class, 'index']);//ok
@@ -57,10 +57,10 @@ Route::prefix('v1')->group(function () {
 
             // Usuários (Gerenciamento)
             Route::get('/users', [UserController::class, 'index']); //ok
-            Route::post('/users', [UserController::class, 'store']);
-            Route::get('/users/{user}', [UserController::class, 'show']);
-            Route::put('/users/{user}', [UserController::class, 'update']);
-            Route::delete('/users/{user}', [UserController::class, 'destroy']);
+            Route::post('/users', [UserController::class, 'store']); //ok
+            Route::get('/users/{user}', [UserController::class, 'show']);//ok
+            Route::put('/users/{user}', [UserController::class, 'update']);//ok
+            Route::delete('/users/{user}', [UserController::class, 'destroy']);//ok
         });
     });
 });
