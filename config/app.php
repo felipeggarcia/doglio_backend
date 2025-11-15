@@ -82,6 +82,19 @@ return [
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Use Hashids
+    |--------------------------------------------------------------------------
+    |
+    | This option controls whether the application should use Hashids to encode
+    | model IDs in API responses and route bindings. When set to false, the
+    | application will use plain integer IDs.
+    |
+    */
+
+    'use_hashids' => env('APP_USE_HASHIDS', true),
+
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     /*

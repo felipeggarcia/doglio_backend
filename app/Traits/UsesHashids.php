@@ -26,6 +26,11 @@ trait UsesHashids
      */
     public function resolveRouteBinding($value, $field = null)
     {
+        // Se hashids está desabilitado, usa o ID diretamente
+        if (!config('app.use_hashids', true)) {
+            return $this->where($this->getRouteKeyName(), $value)->first();
+        }
+
         // Decodifica o Hashid para obter o ID real
         $decoded = Hashids::decode($value);
 
@@ -44,10 +49,15 @@ trait UsesHashids
     /**
      * Get the encoded ID attribute.
      *
-     * @return string
+     * @return string|int
      */
     public function getHashidAttribute()
     {
+        // Se hashids está desabilitado, retorna o ID normal
+        if (!config('app.use_hashids', true)) {
+            return $this->id;
+        }
+
         return Hashids::encode($this->id);
     }
 }

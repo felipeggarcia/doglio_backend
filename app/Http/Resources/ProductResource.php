@@ -16,7 +16,7 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => Hashids::encode($this->id),
+            'id' => $this->hashid,
             'name' => $this->name,
             'description' => $this->description,
             'price' => number_format($this->price, 2, '.', ''),

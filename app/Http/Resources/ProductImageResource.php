@@ -16,7 +16,7 @@ class ProductImageResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => Hashids::encode($this->id),
+            'id' => $this->hashid,
             'url' => url('storage/' . $this->path),
             'order' => $this->order,
             'is_primary' => $this->is_primary,
