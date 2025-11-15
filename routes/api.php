@@ -24,7 +24,7 @@ Route::prefix('v1')->group(function () {
 
     // Produtos (Leitura pública)
     Route::get('/products', [ProductController::class, 'index']);//ok
-    Route::get('/ra fazer de filtro no banco de dados tem que se possivel mandando parametros get/{product}', [ProductController::class, 'show']);//ok
+    Route::get('/products/{product}', [ProductController::class, 'show']);//ok
 
     // Categorias (Leitura pública)
     Route::get('/categories', [CategoryController::class, 'index']);//ok

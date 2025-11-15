@@ -90,10 +90,10 @@ class AuthTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'message',
-                'user' => ['id', 'name', 'email'],
-                'access_token',
-                'token_type',
+                'data' => [
+                    'user' => ['id', 'name', 'email'],
+                    'token',
+                ],
             ]);
 
         $user->refresh();

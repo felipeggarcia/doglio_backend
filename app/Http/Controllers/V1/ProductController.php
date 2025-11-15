@@ -145,9 +145,13 @@ class ProductController extends Controller
         ]);
 
         if ($request->has('category_ids')) {
-            // Decodifica Hashids para IDs reais
+            // Decodifica Hashids para IDs reais (ou usa diretamente se hashids desabilitado)
             $realIds = collect($request->category_ids)->map(function ($hashid) {
-                return \Vinkla\Hashids\Facades\Hashids::decode($hashid)[0] ?? null;
+                if (!config('app.use_hashids', true)) {
+                    return is_numeric($hashid) ? (int)$hashid : null;
+                }
+                $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashid);
+                return $decoded[0] ?? null;
             })->filter()->toArray();
             
             $product->categories()->sync($realIds);
@@ -207,9 +211,13 @@ class ProductController extends Controller
         ]));
 
         if ($request->has('category_ids')) {
-            // Decodifica Hashids para IDs reais
+            // Decodifica Hashids para IDs reais (ou usa diretamente se hashids desabilitado)
             $realIds = collect($request->category_ids)->map(function ($hashid) {
-                return \Vinkla\Hashids\Facades\Hashids::decode($hashid)[0] ?? null;
+                if (!config('app.use_hashids', true)) {
+                    return is_numeric($hashid) ? (int)$hashid : null;
+                }
+                $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashid);
+                return $decoded[0] ?? null;
             })->filter()->toArray();
             
             $product->categories()->sync($realIds);
@@ -217,13 +225,18 @@ class ProductController extends Controller
 
         // Remover imagens antigas se solicitado
         if ($request->has('remove_images')) {
-            // Decodifica Hashids para IDs reais
+            // Decodifica Hashids para IDs reais (ou usa diretamente se hashids desabilitado)
             $realImageIds = collect($request->remove_images)->map(function ($hashid) {
-                return \Vinkla\Hashids\Facades\Hashids::decode($hashid)[0] ?? null;
+                if (!config('app.use_hashids', true)) {
+                    return is_numeric($hashid) ? (int)$hashid : null;
+                }
+                $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashid);
+                return $decoded[0] ?? null;
             })->filter()->toArray();
             
             ProductImage::whereIn('id', $realImageIds)
                 ->where('product_id', $product->id)
+                ->get()
                 ->each(function ($image) {
                     $image->delete(); // Usa o boot do model para deletar o arquivo
                 });

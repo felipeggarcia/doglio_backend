@@ -22,6 +22,11 @@ class UserController extends Controller
             $query->where('role', $request->role);
         }
 
+        // Filtro por is_active
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
         // Busca por nome ou email
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
