@@ -20,9 +20,21 @@ class ProductController extends Controller
 
         // Filtro por categoria
         if ($request->has('category_id')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $q->where('categories.id', $request->category_id);
-            });
+            // Decodifica Hashid para ID real (ou usa diretamente se hashids desabilitado)
+            $categoryId = $request->category_id;
+            
+            if (config('app.use_hashids', true)) {
+                $decoded = \Vinkla\Hashids\Facades\Hashids::decode($categoryId);
+                $categoryId = $decoded[0] ?? null;
+            } else {
+                $categoryId = is_numeric($categoryId) ? (int)$categoryId : null;
+            }
+            
+            if ($categoryId) {
+                $query->whereHas('categories', function ($q) use ($categoryId) {
+                    $q->where('categories.id', $categoryId);
+                });
+            }
         }
 
         // Filtro por destacados
