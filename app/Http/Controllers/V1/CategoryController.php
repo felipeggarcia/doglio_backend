@@ -6,6 +6,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\ProductResource;
 use App\Http\Requests\V1\Admin\CategoryStoreRequest;
 use App\Http\Requests\V1\Admin\CategoryUpdateRequest;
 
@@ -38,12 +39,23 @@ class CategoryController extends Controller
     }
 
     /**
-     * Display the specified category (PUBLIC)
+     * Display the specified category with paginated products (PUBLIC)
      */
-    public function show(Category $category)
+    public function show(Request $request, Category $category)
     {
         $category->loadCount('products');
-        return new CategoryResource($category);
+
+        $products = $category->products()
+            ->with(['images', 'primaryImage'])
+            ->where('stock_quantity', '>', 0)
+            ->orderBy('is_highlighted', 'desc')
+            ->orderBy('name', 'asc')
+            ->paginate($request->get('per_page', 15));
+
+        return response()->json([
+            'data' => new CategoryResource($category),
+            'products' => ProductResource::collection($products),
+        ]);
     }
 
     /**

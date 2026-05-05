@@ -112,9 +112,9 @@ class ProductController extends Controller
                 $query->orderBy($sortBy, $sortOrder);
             }
         } else {
-            // Ordenação padrão: destacados primeiro, depois por estoque (maior para menor)
+            // Ordenação padrão: destacados primeiro, depois por ordem alfabética
             $query->orderBy('is_highlighted', 'desc')
-                  ->orderBy('stock_quantity', 'desc');
+                  ->orderBy('name', 'asc');
         }
 
         $products = $query->paginate($request->get('per_page', 15));
