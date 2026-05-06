@@ -2,31 +2,32 @@
 
 namespace App\Models;
 
-use App\Traits\UsesHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class OrderItem extends Model
+class CartEvent extends Model
 {
-    use HasFactory, SoftDeletes, UsesHashids;
+    use HasFactory;
 
     protected $fillable = [
-        'order_id',
+        'user_id',
         'product_id',
+        'action',
         'quantity',
-        'unit_price',
+        'price_at_moment',
+        'snapshot',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
-        'unit_price' => 'decimal:2',
+        'price_at_moment' => 'decimal:2',
+        'snapshot' => 'array',
     ];
 
-    public function order(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(User::class);
     }
 
     public function product(): BelongsTo

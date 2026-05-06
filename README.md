@@ -1,6 +1,6 @@
 # Doglio E-commerce Backend API
 
-A RESTful API built with Laravel 12 for an e-commerce system with product catalog, categories, and order management.
+A RESTful API built with Laravel 12 for an e-commerce system with full support for product catalog, cart, checkout, orders, promotions, addresses, and payments.
 
 ## Key Features
 
@@ -8,12 +8,16 @@ A RESTful API built with Laravel 12 for an e-commerce system with product catalo
 - **Product Management** with advanced filtering and multi-image support (up to 6 images)
 - **Category System** with many-to-many relationships
 - **User Management** (Admin) with role-based access control
-- **Order System** with order items tracking
+- **Cart System** - Sync-based cart with price/promotion snapshot
+- **Promotions Module** - Percentage and fixed discounts, linked to products
+- **Checkout & Orders** - Full checkout flow with delivery or pickup
+- **Addresses** - Saved delivery addresses with primary flag
+- **Payments** - PIX, credit card, boleto; per-order payment record
+- **Cart Snapshots** - Audit trail saved on checkout and cart purge
 - **Advanced Filtering** - 10+ filter options for products
 - **Soft Deletes** on all major tables
 - **Hashids Support** - Configurable ID obfuscation
 - **RESTful Standards** - Consistent response format across all endpoints
-- **Test Coverage** - 72 tests with 285 assertions
 - **API Versioning** (v1)
 - **Smart Defaults** - Hides out-of-stock products, prioritizes highlighted items
 
@@ -73,7 +77,11 @@ php artisan db:seed
 This creates:
 - Admin user: `admin@doglio.com` / `password`
 - Customer user: `client@doglio.com` / `password`
-- Sample categories and products
+- Sample categories, products, and product images
+- PIX payment method
+- Active promotion: 10% off "Ração Super Premium"
+- Expired promotion: Black Friday fixed discount
+- 3 saved addresses for the test customer
 
 7. **Create storage link**
 ```bash
@@ -257,6 +265,192 @@ PUT /api/v1/categories/{id}
 DELETE /api/v1/categories/{id}
 ```
 
+### Promotions (Public read)
+
+**List active promotions**
+```
+GET /api/v1/promotions
+```
+
+**Get promotion**
+```
+GET /api/v1/promotions/{id}
+```
+
+### Cart (Requires authentication)
+
+The cart is **sync-based**: the client sends the full current state on every change (debounced). On sync, the server snapshots the current price and active promotion for each item.
+
+**Sync cart**
+```
+POST /api/v1/cart/sync
+Headers: Authorization: Bearer {token}
+{
+  "items": [
+    { "product_id": "jR", "quantity": 2 },
+    { "product_id": "k5", "quantity": 1 }
+  ]
+}
+```
+
+**Get cart**
+```
+GET /api/v1/cart
+Headers: Authorization: Bearer {token}
+```
+Response includes `price_changed` and `stock_warning` flags per item, plus global `has_price_change` and `has_stock_warning`.
+
+**Validate cart**
+```
+GET /api/v1/cart/validate
+Headers: Authorization: Bearer {token}
+```
+Returns `{ valid: bool, changes: [] }` with change types: `price_changed`, `promotion_expired`, `out_of_stock`, `stock_reduced`.
+
+**Clear cart**
+```
+DELETE /api/v1/cart
+Headers: Authorization: Bearer {token}
+```
+
+### Checkout (Requires authentication)
+
+The cart must have items. On checkout, a `CartSnapshot` is saved and the cart is cleared.
+
+**Pickup (no address needed)**
+```
+POST /api/v1/checkout
+{
+  "payment_method_id": "jR",
+  "delivery_type": "pickup"
+}
+```
+
+**Delivery with saved address**
+```
+POST /api/v1/checkout
+{
+  "payment_method_id": "jR",
+  "delivery_type": "delivery",
+  "address_id": "jR"
+}
+```
+
+**Delivery with manual address**
+```
+POST /api/v1/checkout
+{
+  "payment_method_id": "jR",
+  "delivery_type": "delivery",
+  "shipping_street": "Rua das Flores",
+  "shipping_number": "142",
+  "shipping_complement": "Apto 31",
+  "shipping_city": "São Paulo",
+  "shipping_state": "SP",
+  "shipping_zip": "01310100"
+}
+```
+> `shipping_*` fields are only required when `delivery_type` is `delivery` **and** no `address_id` is provided.
+
+### Orders (Requires authentication)
+
+**List orders**
+```
+GET /api/v1/orders
+Headers: Authorization: Bearer {token}
+```
+
+**Get order**
+```
+GET /api/v1/orders/{id}
+Headers: Authorization: Bearer {token}
+```
+
+### Addresses (Requires authentication)
+
+**List addresses**
+```
+GET /api/v1/addresses
+Headers: Authorization: Bearer {token}
+```
+
+**Create address**
+```
+POST /api/v1/addresses
+Headers: Authorization: Bearer {token}
+{
+  "label": "Casa",
+  "street": "Rua das Flores",
+  "number": "142",
+  "complement": "Apto 31",
+  "city": "São Paulo",
+  "state": "SP",
+  "zip": "01310100",
+  "is_primary": true
+}
+```
+
+**Update address**
+```
+PUT /api/v1/addresses/{id}
+Headers: Authorization: Bearer {token}
+```
+
+**Delete address**
+```
+DELETE /api/v1/addresses/{id}
+Headers: Authorization: Bearer {token}
+```
+
+**Set as primary**
+```
+PATCH /api/v1/addresses/{id}/primary
+Headers: Authorization: Bearer {token}
+```
+
+### Admin: Promotions
+
+**Create promotion**
+```
+POST /api/v1/promotions
+Headers: Authorization: Bearer {token}
+{
+  "name": "Black Friday",
+  "description": "20% off everything",
+  "type": "percentage",
+  "discount_value": 20.00,
+  "starts_at": "2026-11-28T00:00:00",
+  "ends_at": "2026-11-28T23:59:59",
+  "is_active": true,
+  "min_quantity": 1,
+  "max_uses": 1000,
+  "product_ids": ["jR", "k5"]
+}
+```
+> `type`: `percentage` or `fixed`. For `percentage`, `discount_value` must be ≤ 100.
+
+**Update promotion**
+```
+PUT /api/v1/promotions/{id}
+```
+
+**Delete promotion**
+```
+DELETE /api/v1/promotions/{id}
+```
+
+**Attach products to promotion**
+```
+POST /api/v1/promotions/{id}/products
+{ "product_ids": ["jR", "k5"] }
+```
+
+**Detach products from promotion**
+```
+DELETE /api/v1/promotions/{id}/products
+{ "product_ids": ["jR"] }
+```
+
 ---
 
 ## Project Structure
@@ -268,7 +462,11 @@ app/
 │   │   ├── AuthController.php
 │   │   ├── ProductController.php
 │   │   ├── CategoryController.php
-│   │   └── UserController.php
+│   │   ├── UserController.php
+│   │   ├── CartController.php
+│   │   ├── OrderController.php
+│   │   ├── UserAddressController.php
+│   │   └── PromotionController.php
 │   ├── Requests/V1/Admin/
 │   │   ├── CategoryStoreRequest.php
 │   │   └── CategoryUpdateRequest.php
@@ -276,7 +474,14 @@ app/
 │   │   ├── ProductResource.php
 │   │   ├── CategoryResource.php
 │   │   ├── UserResource.php
-│   │   └── ProductImageResource.php
+│   │   ├── ProductImageResource.php
+│   │   ├── CartItemResource.php
+│   │   ├── OrderResource.php
+│   │   ├── OrderItemResource.php
+│   │   ├── PromotionResource.php
+│   │   ├── UserAddressResource.php
+│   │   ├── PaymentResource.php
+│   │   └── PaymentMethodResource.php
 │   └── Middleware/
 │       ├── AdminMiddleware.php
 │       └── ForceJsonResponse.php
@@ -286,24 +491,33 @@ app/
 │   ├── ProductImage.php
 │   ├── Category.php
 │   ├── Order.php
-│   └── OrderItem.php
+│   ├── OrderItem.php
+│   ├── CartItem.php
+│   ├── CartSnapshot.php
+│   ├── Promotion.php
+│   ├── UserAddress.php
+│   ├── Payment.php
+│   └── PaymentMethod.php
 └── Traits/
     └── UsesHashids.php
 ```
 
 ## Database Schema
 
-- **users**: User accounts (customers and admins)
-  - Added: `is_active` (boolean) - Account status
-  - Supports soft deletes
-- **categories**: Product categories
-- **products**: Product catalog
-- **product_images**: Product images (up to 6 per product)
-  - `is_primary`: Marks the main product image
-  - `order`: Display order
-- **category_product**: Many-to-many pivot table
-- **orders**: Customer orders
-- **order_items**: Order line items
+- **users**: User accounts (customers and admins); `role`, `city`, `state`, `last_login_at`, soft deletes
+- **categories**: Product categories; `is_highlighted`
+- **products**: Product catalog; `price`, `stock_quantity`, `is_highlighted`, soft deletes
+- **product_images**: Product images (up to 6 per product); `is_primary`, `order`
+- **category_product**: Many-to-many pivot (products ↔ categories)
+- **promotions**: Discount campaigns; `type` (percentage/fixed), `discount_value`, `starts_at`, `ends_at`, `is_active`, `min_quantity`, `max_uses`, `uses_count`, soft deletes
+- **product_promotion**: Many-to-many pivot (products ↔ promotions)
+- **payment_methods**: Available payment methods; `type` (pix/credit_card/boleto), `is_active`
+- **cart_items**: Per-user cart; `unit_price` and `promotion_id` snapshots current price at sync time
+- **cart_snapshots**: Audit log saved on checkout and cart purge; stores full cart JSON + `trigger_type` + `total_value`
+- **user_addresses**: Saved delivery addresses per user; `is_primary`, soft deletes
+- **orders**: Customer orders; `delivery_type` (delivery/pickup), shipping address snapshot fields, `address_id` FK, soft deletes
+- **order_items**: Order line items; `unit_price` at time of purchase
+- **payments**: One per order; `status` (pending/paid/failed/refunded), PIX/boleto/card fields, soft deletes
 
 All tables support soft deletes.
 
@@ -375,19 +589,35 @@ php artisan serve
   - Ativar/desativar usuários
   - Soft deletes
   - Filtros por role e status
-- Sistema de Pedidos
-- Relacionamento muitos-para-muitos (Produtos ↔ Categorias)
+- **Módulo de Promoções**
+  - Descontos percentuais e fixos
+  - Vinculadas a produtos específicos
+  - Controle de validade (starts_at / ends_at)
+  - Limite de usos (max_uses)
+  - Leitura pública de promoções ativas; CRUD restrito ao admin
+- **Carrinho (sync-based)**
+  - Cliente envia o estado completo a cada alteração (debounce ~800ms)
+  - Servidor salva snapshot de preço e promoção no momento do sync
+  - Endpoint `/cart/validate` detecta mudanças de preço, promoção expirada, sem estoque
+- **Checkout**
+  - Opções: entrega (com endereço salvo ou manual) ou retirada
+  - Valida estoque antes de confirmar
+  - Salva `CartSnapshot` com o conteúdo completo do carrinho
+  - Cria pedido + pagamento em transação única
+- **Pedidos** — histórico por usuário com itens e pagamento
+- **Endereços** — múltiplos endereços salvos por usuário com flag de principal
+- **Pagamentos** — registro por pedido; suporte a PIX, boleto e cartão de crédito
+- **Cart Snapshots** — histórico de carrinhos no checkout e no purge
+- Relacionamento muitos-para-muitos (Produtos ↔ Categorias, Produtos ↔ Promoções)
 - Soft Deletes em todas as tabelas
 - Controle de acesso por roles (admin/customer)
 - Versionamento de API (v1)
-- Form Requests para validação
 - API Resources para formatação de resposta
 - Hashids configurável (via .env)
 - ForceJsonResponse middleware
 - **Tratamento de erros RESTful padronizado**
-- **72 testes automatizados (285 assertions)**
 
-## Usuários de Teste
+## Usuários e Dados de Teste
 
 Após rodar `php artisan db:seed`:
 
@@ -398,6 +628,12 @@ Após rodar `php artisan db:seed`:
 **Cliente:**
 - Email: `client@doglio.com`
 - Senha: `password`
+
+**Dados seedados:**
+- Método de pagamento: PIX (`is_active = true`)
+- Promoção ativa: "Lançamento Ração Premium" — 10% off no produto "Ração Super Premium" (sem data de expiração)
+- Promoção expirada: "Black Friday 2025" — R$15,00 off na "Coleira Anti-pulgas"
+- 3 endereços salvos para o cliente: Casa (principal), Trabalho, Casa da Mãe
 
 ## Comandos Úteis
 
@@ -465,11 +701,13 @@ All API responses follow a consistent RESTful format:
 - `FORBIDDEN` - User lacks permissions
 - `INVALID_CREDENTIALS` - Wrong email/password
 - `ACCOUNT_INACTIVE` - User account is deactivated
-- `RESOURCE_NOT_FOUND` - Model not found or soft deleted (e.g., product doesn't exist)
+- `RESOURCE_NOT_FOUND` - Model not found or soft deleted
 - `ENDPOINT_NOT_FOUND` - API route doesn't exist
 - `METHOD_NOT_ALLOWED` - HTTP method not supported for this endpoint
 - `VALIDATION_ERROR` - Request validation failed (details contains field errors)
 - `IMAGE_LIMIT_EXCEEDED` - Product image limit exceeded (max 6)
+- `CART_EMPTY` - Checkout attempted with an empty cart
+- `INSUFFICIENT_STOCK` - One or more cart items exceed available stock
 - `INTERNAL_ERROR` - Server error (with debug details in development mode)
 
 ### Examples
