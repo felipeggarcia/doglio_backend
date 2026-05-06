@@ -635,6 +635,141 @@ Após rodar `php artisan db:seed`:
 - Promoção expirada: "Black Friday 2025" — R$15,00 off na "Coleira Anti-pulgas"
 - 3 endereços salvos para o cliente: Casa (principal), Trabalho, Casa da Mãe
 
+---
+
+## TODO — Testes
+
+Os arquivos existentes cobrem: `AuthTest`, `CategoryTest`, `ProductFilterTest`, `ProductImageTest`, `ProductErrorHandlingTest`, `UserTest`.
+
+Os módulos abaixo **não têm testes ainda**:
+
+### `tests/Feature/CartTest.php`
+- `test_sync_cart`
+- `test_sync_cart_applies_promotion_price`
+- `test_sync_cart_caps_at_stock`
+- `test_show_cart`
+- `test_validate_cart_detects_price_change`
+- `test_validate_cart_detects_out_of_stock`
+- `test_validate_cart_detects_promotion_expired`
+- `test_clear_cart`
+
+### `tests/Feature/CheckoutTest.php`
+- `test_checkout_pickup`
+- `test_checkout_delivery_with_saved_address`
+- `test_checkout_delivery_with_manual_address`
+- `test_checkout_fails_when_cart_empty`
+- `test_checkout_fails_when_insufficient_stock`
+- `test_checkout_fails_when_delivery_without_address`
+- `test_checkout_creates_order_and_payment`
+- `test_checkout_creates_cart_snapshot`
+
+### `tests/Feature/OrderTest.php`
+- `test_list_orders`
+- `test_show_order`
+- `test_cannot_see_other_user_order`
+- `test_admin_update_order_status`
+- `test_update_order_status_records_history`
+- `test_non_admin_cannot_update_status`
+
+### `tests/Feature/AddressTest.php`
+- `test_list_addresses`
+- `test_create_address`
+- `test_create_address_sets_others_non_primary`
+- `test_update_address`
+- `test_cannot_update_other_user_address`
+- `test_delete_address`
+- `test_set_primary`
+
+### `tests/Feature/PromotionTest.php`
+- `test_list_active_promotions`
+- `test_show_promotion`
+- `test_admin_create_promotion`
+- `test_admin_create_promotion_percentage_over_100_fails`
+- `test_admin_update_promotion`
+- `test_admin_delete_promotion`
+- `test_admin_attach_products`
+- `test_admin_detach_products`
+- `test_non_admin_cannot_create_promotion`
+
+### `tests/Feature/ReviewTest.php`
+- `test_list_product_reviews`
+- `test_create_review_requires_purchase`
+- `test_create_review_after_delivered_order`
+- `test_cannot_review_twice`
+- `test_delete_own_review`
+- `test_cannot_delete_other_user_review`
+
+### `tests/Feature/FavoriteTest.php`
+- `test_list_favorites`
+- `test_add_favorite`
+- `test_cannot_add_duplicate_favorite`
+- `test_remove_favorite`
+- `test_toggle_notify`
+
+### `tests/Feature/PushTokenTest.php`
+- `test_register_push_token`
+- `test_register_same_token_updates_user`
+- `test_remove_push_token`
+
+### `tests/Unit/ProductObserverTest.php`
+- `test_dispatches_restock_job_when_stock_goes_from_zero`
+- `test_dispatches_low_stock_job_when_stock_drops_below_threshold`
+- `test_does_not_dispatch_when_stock_unchanged`
+
+---
+
+## TODO — Melhorias de Qualidade
+
+### Rate Limiting (`AppServiceProvider` + `routes/api.php`)
+Definir limiters nomeados (`api_public`, `api_auth`, `login`) e aplicar nas rotas com `throttle:nome`.
+Retorna `429 Too Many Requests` com header `Retry-After` automaticamente.
+- `throttle:login` → 10 req/min por IP (brute force protection)
+- `throttle:api_public` → 60 req/min por IP
+- `throttle:api_auth` → 120 req/min por usuário autenticado
+
+### Policies (`app/Policies/` + controllers)
+Centralizar regras de ownership em vez de `if ($model->user_id !== $user->id) abort(403)` espalhado.
+Policies a criar: `ReviewPolicy`, `OrderPolicy`, `UserAddressPolicy`, `UserFavoritePolicy`.
+Nos controllers substituir por `$this->authorize('delete', $review)`.
+
+### Cache em rotas de leitura pública (`ProductController`, `CategoryController`, `PromotionController`)
+Usar `Cache::remember($chave, $ttl, fn() => query)` nos métodos `index`.
+Chave dinâmica com `md5(json_encode($request->all()))` para cachear cada combinação de filtros.
+Invalidar nos métodos de escrita (store/update/destroy).
+Driver: `file` local, `redis` em produção (só muda o `.env`).
+
+### Queue driver `database` (`.env` + README)
+Trocar `QUEUE_CONNECTION=sync` para `QUEUE_CONNECTION=database`.
+A tabela `jobs` já existe. Worker local: `php artisan queue:work`.
+Em produção configurar Supervisor para manter o worker vivo.
+
+---
+
+## TODO — Firebase / FCM (Push Notifications)
+
+As notificações push estão arquitetadas e prontas no backend (`PushNotificationService`, `NotifyRestockJob`, `NotifyLowStockJob`, `ProductObserver`), mas requerem configuração do Firebase Cloud Messaging antes de enviar mensagens reais.
+
+**Passos para ativar:**
+
+1. Acesse [console.firebase.google.com](https://console.firebase.google.com) e crie (ou acesse) seu projeto
+2. Vá em **Project Settings → Cloud Messaging**
+3. Copie a **Server Key** (legacy) ou configure o **service account** para FCM HTTP v1
+4. Adicione ao `.env`:
+```env
+FCM_SERVER_KEY=sua_server_key_aqui
+```
+5. Adicione ao `config/services.php`:
+```php
+'fcm' => [
+    'server_key' => env('FCM_SERVER_KEY'),
+],
+```
+6. No Flutter, integre o pacote `firebase_messaging` e registre o token do dispositivo via `POST /api/v1/push-tokens`
+
+> **Sem a chave configurada**, o `PushNotificationService` apenas loga a notificação e não lança erros. O restante do sistema funciona normalmente.
+
+---
+
 ## Comandos Úteis
 
 ```bash

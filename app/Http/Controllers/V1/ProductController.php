@@ -4,7 +4,9 @@ namespace App\Http\Controllers\V1;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\StockMovement;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\StockMovementResource;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
@@ -127,7 +129,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        $product->load(['categories', 'images', 'primaryImage']);
+        $product->load(['categories', 'images', 'primaryImage', 'reviews']);
         return new ProductResource($product);
     }
 
@@ -222,6 +224,24 @@ class ProductController extends Controller
             'is_highlighted',
         ]));
 
+        // Registra movimentação de estoque quando stock_quantity for alterado manualmente
+        if ($request->has('stock_quantity')) {
+            $oldStock = (int) $product->getOriginal('stock_quantity');
+            $newStock = (int) $request->stock_quantity;
+
+            if ($newStock !== $oldStock) {
+                $diff = abs($newStock - $oldStock);
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'type'       => $newStock > $oldStock ? 'in' : 'out',
+                    'quantity'   => $diff,
+                    'reason'     => $newStock > $oldStock ? 'purchase' : 'manual_adjustment',
+                    'user_id'    => $request->user()->id,
+                    'notes'      => 'Ajuste manual via painel admin',
+                ]);
+            }
+        }
+
         if ($request->has('category_ids')) {
             // Decodifica Hashids para IDs reais (ou usa diretamente se hashids desabilitado)
             $realIds = collect($request->category_ids)->map(function ($hashid) {
@@ -309,5 +329,42 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'Product deleted successfully'
         ]);
+    }
+
+    /**
+     * Lista as movimentações de estoque de um produto (admin only).
+     * GET /api/v1/products/{product}/stock-movements
+     */
+    public function stockMovements(Request $request, Product $product)
+    {
+        $request->validate([
+            'type'     => 'nullable|in:in,out',
+            'reason'   => 'nullable|in:sale,return,purchase,manual_adjustment,loss',
+            'from'     => 'nullable|date',
+            'to'       => 'nullable|date',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $query = $product->stockMovements()->with('user');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('reason')) {
+            $query->where('reason', $request->reason);
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+
+        $movements = $query->paginate($request->get('per_page', 20));
+
+        return StockMovementResource::collection($movements);
     }
 }

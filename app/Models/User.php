@@ -66,4 +66,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(CartItem::class);
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(UserFavorite::class);
+    }
+
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(PushToken::class);
+    }
 }

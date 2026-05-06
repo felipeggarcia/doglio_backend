@@ -51,4 +51,9 @@ class Order extends Model
     {
         return $this->hasOne(Payment::class);
     }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at');
+    }
 }

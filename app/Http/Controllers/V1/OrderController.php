@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\CartItem;
 use App\Models\CartSnapshot;
+use App\Models\StockMovement;
 use App\Models\UserAddress;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
@@ -184,11 +185,45 @@ class OrderController extends Controller
                 'delivery_type' => $request->delivery_type,
             ], $shippingData));
 
-            // Cria os itens com o preço do carrinho (já havia snapshot de promoção)
+            // Cria os itens, decrementa estoque com lock e registra movimentação
             foreach ($cartItems as $item) {
+                // Lock exclusivo na linha do produto — previne race condition em checkouts simultâneos
+                $product = \App\Models\Product::lockForUpdate()->find($item->product_id);
+
+                if ($item->quantity > $product->stock_quantity) {
+                    throw new \Illuminate\Validation\ValidationException(
+                        validator([], []),
+                        response()->json([
+                            'success' => false,
+                            'message' => 'Insufficient stock',
+                            'error' => [
+                                'code' => 'INSUFFICIENT_STOCK',
+                                'details' => [[
+                                    'product_id'   => $product->hashid,
+                                    'product_name' => $product->name,
+                                    'requested'    => $item->quantity,
+                                    'available'    => $product->stock_quantity,
+                                ]],
+                            ],
+                        ], 422)
+                    );
+                }
+
+                $product->decrement('stock_quantity', $item->quantity);
+
+                StockMovement::create([
+                    'product_id'     => $product->id,
+                    'type'           => 'out',
+                    'quantity'       => $item->quantity,
+                    'reason'         => 'sale',
+                    'reference_type' => 'order',
+                    'reference_id'   => $order->id,
+                    'user_id'        => null, // sistema automático
+                ]);
+
                 $order->orderItems()->create([
                     'product_id' => $item->product_id,
-                    'quantity' => $item->quantity,
+                    'quantity'   => $item->quantity,
                     'unit_price' => $item->unit_price,
                 ]);
             }

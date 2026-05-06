@@ -54,6 +54,21 @@ class Product extends Model
         return $this->belongsToMany(Promotion::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(UserFavorite::class);
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class)->orderByDesc('created_at');
+    }
+
     /**
      * Retorna a promoção ativa mais vantajosa para este produto.
      * Requer que a relação 'promotions' já esteja carregada (eager loaded).

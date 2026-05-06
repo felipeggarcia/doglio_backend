@@ -20,11 +20,17 @@ class ProductResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'price' => number_format($this->price, 2, '.', ''),
-            'stock_quantity' => (int) $this->stock_quantity,
+            'stock_quantity' => $this->when(
+                $request->user()?->role === 'admin',
+                (int) $this->stock_quantity
+            ),
+            'in_stock' => $this->stock_quantity > 0,
             'is_highlighted' => (bool) $this->is_highlighted,
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
             'primary_image' => new ProductImageResource($this->whenLoaded('primaryImage')),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
+            'average_rating' => $this->whenLoaded('reviews', fn() => $this->reviews->avg('rating') ? round($this->reviews->avg('rating'), 1) : null),
+            'reviews_count' => $this->whenLoaded('reviews', fn() => $this->reviews->count()),
         ];
     }
 }

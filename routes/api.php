@@ -8,8 +8,12 @@ use App\Http\Controllers\V1\CategoryController;
 use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\CartController;
 use App\Http\Controllers\V1\OrderController;
+use App\Http\Controllers\V1\OrderStatusController;
 use App\Http\Controllers\V1\UserAddressController;
 use App\Http\Controllers\V1\PromotionController;
+use App\Http\Controllers\V1\ReviewController;
+use App\Http\Controllers\V1\FavoriteController;
+use App\Http\Controllers\V1\PushTokenController;
 use App\Http\Resources\UserResource;
 
 // ==========================================
@@ -29,6 +33,7 @@ Route::prefix('v1')->group(function () {
     // Produtos (Leitura pública)
     Route::get('/products', [ProductController::class, 'index']);//ok
     Route::get('/products/{product}', [ProductController::class, 'show']);//ok
+    Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);//ok
 
     // Categorias (Leitura pública)
     Route::get('/categories', [CategoryController::class, 'index']);//ok
@@ -55,16 +60,30 @@ Route::prefix('v1')->group(function () {
         Route::delete('/cart', [CartController::class, 'clear']);
 
         // Checkout e Pedidos
-        Route::post('/checkout', [OrderController::class, 'checkout']);
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::get('/orders/{order}', [OrderController::class, 'show']);
+        Route::post('/checkout', [OrderController::class, 'checkout']);//ok
+        Route::get('/orders', [OrderController::class, 'index']);//ok
+        Route::get('/orders/{order}', [OrderController::class, 'show']);//ok
+
+        // Avaliações
+        Route::post('/products/{product}/reviews', [ReviewController::class, 'store']);
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+
+        // Favoritos
+        Route::get('/favorites', [FavoriteController::class, 'index']);
+        Route::post('/favorites', [FavoriteController::class, 'store']);
+        Route::delete('/favorites/{favorite}', [FavoriteController::class, 'destroy']);
+        Route::patch('/favorites/{favorite}/notify', [FavoriteController::class, 'toggleNotify']);
+
+        // Push tokens
+        Route::post('/push-tokens', [PushTokenController::class, 'store']);
+        Route::delete('/push-tokens', [PushTokenController::class, 'destroy']);
 
         // Endereços do usuário
-        Route::get('/addresses', [UserAddressController::class, 'index']);
-        Route::post('/addresses', [UserAddressController::class, 'store']);
-        Route::put('/addresses/{address}', [UserAddressController::class, 'update']);
-        Route::delete('/addresses/{address}', [UserAddressController::class, 'destroy']);
-        Route::patch('/addresses/{address}/primary', [UserAddressController::class, 'setPrimary']);
+        Route::get('/addresses', [UserAddressController::class, 'index']);//ok
+        Route::post('/addresses', [UserAddressController::class, 'store']);//ok
+        Route::put('/addresses/{address}', [UserAddressController::class, 'update']);//ok
+        Route::delete('/addresses/{address}', [UserAddressController::class, 'destroy']);//ok
+        Route::patch('/addresses/{address}/primary', [UserAddressController::class, 'setPrimary']);//ok
 
         // ------------------------------------------------------------------
         // MÓDULO ADMIN (Apenas administradores)
@@ -82,6 +101,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/products', [ProductController::class, 'store']);
             Route::put('/products/{product}', [ProductController::class, 'update']);
             Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+            // Status de pedidos
+            Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);
 
             // Categorias
             Route::post('/categories', [CategoryController::class, 'store']);
