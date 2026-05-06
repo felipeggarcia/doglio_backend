@@ -14,8 +14,9 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->boolean('notify_on_restock')->default(true);
             $table->timestamps();
+            $table->softDeletes();
 
-            $table->unique(['user_id', 'product_id']);
+            $table->unique(['user_id', 'product_id', 'deleted_at']);
         });
     }
 
