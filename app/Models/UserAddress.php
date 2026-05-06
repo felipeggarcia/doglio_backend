@@ -8,29 +8,28 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class OrderItem extends Model
+class UserAddress extends Model
 {
     use HasFactory, SoftDeletes, UsesHashids;
 
     protected $fillable = [
-        'order_id',
-        'product_id',
-        'quantity',
-        'unit_price',
+        'user_id',
+        'label',
+        'street',
+        'number',
+        'complement',
+        'city',
+        'state',
+        'zip',
+        'is_primary',
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
-        'unit_price' => 'decimal:2',
+        'is_primary' => 'boolean',
     ];
 
-    public function order(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
-    }
-
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(User::class);
     }
 }

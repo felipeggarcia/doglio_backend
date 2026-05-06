@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Category;
+use App\Models\PaymentMethod;
+use App\Models\Promotion;
+use App\Models\UserAddress;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -93,6 +96,86 @@ class InitialDataSeeder extends Seeder
             [
                 'path' => 'products/product_2_img_1_i9j0k1l2.jpg',
                 'is_primary' => true,
+            ]
+        );
+
+        // 7. Métodos de Pagamento
+        PaymentMethod::updateOrCreate(
+            ['type' => 'pix'],
+            ['name' => 'PIX', 'is_active' => true]
+        );
+
+        // 8. Promoção — 10% de desconto na Ração Super Premium
+        $promo = Promotion::updateOrCreate(
+            ['name' => 'Lançamento Ração Premium'],
+            [
+                'description' => '10% de desconto especial de lançamento na Ração Super Premium.',
+                'type' => 'percentage',
+                'discount_value' => 10.00,
+                'starts_at' => now()->subDay(),
+                'ends_at' => null,  // sem expiração
+                'is_active' => true,
+                'min_quantity' => null,
+                'max_uses' => null,
+            ]
+        );
+
+        // Vincula a promoção ao produto 1
+        $promo->products()->sync([$product1->id]);
+
+        // Promoção expirada (para testar que NÃO aparece no index público)
+        $promoExpired = Promotion::updateOrCreate(
+            ['name' => 'Black Friday 2025'],
+            [
+                'description' => 'Desconto de R$ 15,00 na Coleira Anti-pulgas. Promoção encerrada.',
+                'type' => 'fixed',
+                'discount_value' => 15.00,
+                'starts_at' => now()->subDays(180),
+                'ends_at' => now()->subDays(150),   // expirou há 150 dias
+                'is_active' => true,
+                'min_quantity' => null,
+                'max_uses' => null,
+            ]
+        );
+
+        $promoExpired->products()->sync([$product2->id]);
+
+        // 9. Endereços do Cliente Teste
+        $client = User::where('email', 'client@doglio.com')->first();
+
+        UserAddress::updateOrCreate(
+            ['user_id' => $client->id, 'street' => 'Rua das Flores', 'number' => '142'],
+            [
+                'label' => 'Casa',
+                'complement' => 'Apto 31',
+                'city' => 'São Paulo',
+                'state' => 'SP',
+                'zip' => '01310100',
+                'is_primary' => true,
+            ]
+        );
+
+        UserAddress::updateOrCreate(
+            ['user_id' => $client->id, 'street' => 'Av. Paulista', 'number' => '1000'],
+            [
+                'label' => 'Trabalho',
+                'complement' => 'Sala 504',
+                'city' => 'São Paulo',
+                'state' => 'SP',
+                'zip' => '01310900',
+                'is_primary' => false,
+            ]
+        );
+
+        UserAddress::updateOrCreate(
+            ['user_id' => $client->id, 'street' => 'Rua XV de Novembro', 'number' => '73'],
+            [
+                'label' => 'Casa da Mãe',
+                'complement' => null,
+                'city' => 'Curitiba',
+                'state' => 'PR',
+                'zip' => '80020310',
+                'is_primary' => false,
             ]
         );
     }
