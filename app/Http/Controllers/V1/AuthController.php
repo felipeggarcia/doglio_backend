@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Models\User;
 use App\Http\Resources\UserResource;
+use App\Services\PushTokenService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
@@ -53,8 +54,10 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required',
+            'push_token' => 'nullable|string',
+            'platform'   => 'nullable|in:android,ios',
         ]);
         
         $user = User::where('email', $request->email)->first();
@@ -85,6 +88,11 @@ class AuthController extends Controller
         // Atualiza o last_login
         $user->update(['last_login' => now()]);
 
+        // Registra o push token do dispositivo (se informado)
+        if ($request->filled('push_token') && $request->filled('platform')) {
+            app(PushTokenService::class)->register($user->id, $request->push_token, $request->platform);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -103,6 +111,11 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        // Remove o push token do dispositivo que está fazendo logout (opcional)
+        if ($request->filled('push_token')) {
+            app(PushTokenService::class)->remove($request->user()->id, $request->push_token);
+        }
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([

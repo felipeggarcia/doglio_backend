@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('token')->unique();
             $table->enum('platform', ['android', 'ios']);
-            $table->timestamps();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 

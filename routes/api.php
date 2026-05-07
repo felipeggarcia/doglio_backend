@@ -69,14 +69,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 
         // Favoritos
-        Route::get('/favorites', [FavoriteController::class, 'index']);
-        Route::post('/favorites', [FavoriteController::class, 'store']);
-        Route::delete('/favorites/{favorite}', [FavoriteController::class, 'destroy']);
-        Route::patch('/favorites/{favorite}/notify', [FavoriteController::class, 'toggleNotify']);
+        Route::get('/favorites', [FavoriteController::class, 'index']);//ok
+        Route::post('/favorites', [FavoriteController::class, 'store']);//ok
+        Route::delete('/favorites/{favorite}', [FavoriteController::class, 'destroy']);//ok
+        Route::patch('/favorites/{favorite}/notify', [FavoriteController::class, 'toggleNotify']);//ok
 
-        // Push tokens
-        Route::post('/push-tokens', [PushTokenController::class, 'store']);
-        Route::delete('/push-tokens', [PushTokenController::class, 'destroy']);
 
         // Endereços do usuário
         Route::get('/addresses', [UserAddressController::class, 'index']);//ok

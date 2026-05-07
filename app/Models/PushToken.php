@@ -10,6 +10,10 @@ class PushToken extends Model
 {
     use UsesHashids;
 
+    public $timestamps = false;
+
+    const CREATED_AT = 'created_at';
+
     protected $fillable = [
         'user_id',
         'token',
