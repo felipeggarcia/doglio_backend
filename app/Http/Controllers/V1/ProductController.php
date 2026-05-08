@@ -127,7 +127,7 @@ class ProductController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        $query = Product::with(['categories', 'images', 'primaryImage']);
+        $query = Product::with(['categories', 'images', 'primaryImage', 'activePromotion']);
 
         // Filtro por ativo/inativo
         if ($request->has('is_active')) {
@@ -147,7 +147,7 @@ class ProductController extends Controller
             $query->where('is_highlighted', $request->boolean('is_highlighted'));
         }
 
-        // Filtro por categoria (um ou mais hashids: ?category_ids[]=abc&category_ids[]=def)
+        // Filtro por categoria (um ou mais hashids) — produto deve estar em TODAS as categorias informadas
         if ($request->has('category_ids')) {
             $ids = collect((array) $request->category_ids)->map(function ($hashid) {
                 if (config('app.use_hashids', true)) {
@@ -157,8 +157,8 @@ class ProductController extends Controller
                 return is_numeric($hashid) ? (int) $hashid : null;
             })->filter()->values()->all();
 
-            if (!empty($ids)) {
-                $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $ids));
+            foreach ($ids as $catId) {
+                $query->whereHas('categories', fn($q) => $q->where('categories.id', $catId));
             }
         }
 

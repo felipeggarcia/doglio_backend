@@ -99,12 +99,12 @@ Route::prefix('v1')->group(function () {
             Route::delete('/promotions/{promotion}/products', [PromotionController::class, 'detachProducts']);
 
             // Produtos
-            Route::get('/products', [ProductController::class, 'adminIndex']);
-            Route::post('/products', [ProductController::class, 'store']);
-            Route::put('/products/{product}', [ProductController::class, 'update']);
-            Route::delete('/products/{product}', [ProductController::class, 'destroy']);
-            Route::get('/products/{product}/stock', [StockMovementController::class, 'index']);
-            Route::post('/products/{product}/stock', [StockMovementController::class, 'store']);
+            Route::get('/products', [ProductController::class, 'adminIndex']);//ok
+            Route::post('/products', [ProductController::class, 'store']);//ok
+            Route::put('/products/{product}', [ProductController::class, 'update']);//ok
+            Route::delete('/products/{product}', [ProductController::class, 'destroy']);//ok
+            Route::get('/products/{product}/stock', [StockMovementController::class, 'index']);//ok
+            Route::post('/products/{product}/stock', [StockMovementController::class, 'store']);//ok
 
             // Pedidos
             Route::get('/orders', [OrderController::class, 'adminIndex']);

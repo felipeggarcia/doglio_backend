@@ -7,6 +7,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Support\ApiMessages;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -34,10 +35,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Authentication required',
+                    'message' => ApiMessages::HTTP_UNAUTHENTICATED,
                     'error' => [
                         'code' => 'UNAUTHENTICATED',
-                        'details' => 'You must be authenticated to access this resource'
+                        'details' => ApiMessages::HTTP_UNAUTHENTICATED_DETAILS
                     ]
                 ], 401);
             }
@@ -48,18 +49,16 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Access denied',
+                    'message' => ApiMessages::HTTP_FORBIDDEN,
                     'error' => [
                         'code' => 'FORBIDDEN',
-                        'details' => 'You do not have permission to access this resource'
+                        'details' => ApiMessages::HTTP_FORBIDDEN_DETAILS
                     ]
                 ], 403);
             }
         });
 
         // Rota não encontrada (404) - Endpoint não existe OU Model não existe
-        // No Laravel 11+, ModelNotFoundException é automaticamente convertida em NotFoundHttpException
-        // Então verificamos se a exceção anterior era ModelNotFoundException
         $exceptions->render(function (NotFoundHttpException $e, $request) {
             if ($request->is('api/*')) {
                 // Verifica se a exceção anterior era ModelNotFoundException
@@ -69,10 +68,10 @@ return Application::configure(basePath: dirname(__DIR__))
                     
                     return response()->json([
                         'success' => false,
-                        'message' => ucfirst($model) . ' not found',
+                        'message' => sprintf(ApiMessages::HTTP_RESOURCE_NOT_FOUND, ucfirst($model)),
                         'error' => [
                             'code' => 'RESOURCE_NOT_FOUND',
-                            'details' => "The requested {$model} does not exist or has been deleted"
+                            'details' => sprintf(ApiMessages::HTTP_RESOURCE_NOT_FOUND_DETAILS, $model)
                         ]
                     ], 404);
                 }
@@ -80,10 +79,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Endpoint realmente não existe
                 return response()->json([
                     'success' => false,
-                    'message' => 'Endpoint not found',
+                    'message' => ApiMessages::HTTP_ENDPOINT_NOT_FOUND,
                     'error' => [
                         'code' => 'ENDPOINT_NOT_FOUND',
-                        'details' => 'The requested API endpoint does not exist'
+                        'details' => ApiMessages::HTTP_ENDPOINT_NOT_FOUND_DETAILS
                     ]
                 ], 404);
             }
@@ -94,7 +93,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation failed',
+                    'message' => ApiMessages::HTTP_VALIDATION_ERROR,
                     'error' => [
                         'code' => 'VALIDATION_ERROR',
                         'details' => $e->errors()
@@ -108,10 +107,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Method not allowed',
+                    'message' => ApiMessages::HTTP_METHOD_NOT_ALLOWED,
                     'error' => [
                         'code' => 'METHOD_NOT_ALLOWED',
-                        'details' => 'The HTTP method used is not supported for this endpoint'
+                        'details' => ApiMessages::HTTP_METHOD_NOT_ALLOWED_DETAILS
                     ]
                 ], 405);
             }
@@ -122,10 +121,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Too many requests',
+                    'message' => ApiMessages::HTTP_TOO_MANY_REQUESTS,
                     'error' => [
                         'code' => 'TOO_MANY_REQUESTS',
-                        'details' => 'Rate limit exceeded. Try again in ' . $e->getHeaders()['Retry-After'] . ' seconds'
+                        'details' => sprintf(ApiMessages::HTTP_TOO_MANY_REQUESTS_DETAILS, $e->getHeaders()['Retry-After'])
                     ]
                 ], 429);
             }
@@ -145,7 +144,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     if (config('app.debug')) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Internal server error',
+                            'message' => ApiMessages::HTTP_SERVER_ERROR,
                             'error' => [
                                 'code' => 'INTERNAL_ERROR',
                                 'details' => [
@@ -160,10 +159,10 @@ return Application::configure(basePath: dirname(__DIR__))
                     
                     return response()->json([
                         'success' => false,
-                        'message' => 'Internal server error',
+                        'message' => ApiMessages::HTTP_SERVER_ERROR,
                         'error' => [
                             'code' => 'INTERNAL_ERROR',
-                            'details' => 'An unexpected error occurred. Please try again later'
+                            'details' => ApiMessages::HTTP_SERVER_ERROR_DETAILS
                         ]
                     ], 500);
                 }

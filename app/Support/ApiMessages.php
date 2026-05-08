@@ -111,4 +111,23 @@ final class ApiMessages
     // Genérico
     // -------------------------------------------------------------------------
     const VALIDATION_FAILED        = 'Erro de validação.';
+
+    // -------------------------------------------------------------------------
+    // Erros HTTP (bootstrap/app.php)
+    // -------------------------------------------------------------------------
+    const HTTP_RESOURCE_NOT_FOUND          = '%s não encontrado.';
+    const HTTP_RESOURCE_NOT_FOUND_DETAILS   = 'O %s solicitado não existe ou foi excluído.';
+    const HTTP_UNAUTHENTICATED           = 'Autenticação necessária.';
+    const HTTP_UNAUTHENTICATED_DETAILS   = 'Você precisa estar autenticado para acessar este recurso.';
+    const HTTP_FORBIDDEN                 = 'Acesso negado.';
+    const HTTP_FORBIDDEN_DETAILS         = 'Você não tem permissão para acessar este recurso.';
+    const HTTP_ENDPOINT_NOT_FOUND        = 'Endpoint não encontrado.';
+    const HTTP_ENDPOINT_NOT_FOUND_DETAILS = 'O endpoint solicitado não existe.';
+    const HTTP_VALIDATION_ERROR          = 'Falha na validação.';
+    const HTTP_METHOD_NOT_ALLOWED        = 'Método não permitido.';
+    const HTTP_METHOD_NOT_ALLOWED_DETAILS = 'O método HTTP utilizado não é suportado para este endpoint.';
+    const HTTP_TOO_MANY_REQUESTS         = 'Muitas requisições.';
+    const HTTP_TOO_MANY_REQUESTS_DETAILS  = 'Limite de requisições excedido. Tente novamente em %s segundos.';
+    const HTTP_SERVER_ERROR              = 'Erro interno do servidor.';
+    const HTTP_SERVER_ERROR_DETAILS      = 'Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.';
 }
