@@ -74,10 +74,21 @@ class InitialDataSeeder extends Seeder
                 'is_highlighted' => false,
             ]
         );
-        
+
+        $product3 = Product::updateOrCreate(
+            ['name' => 'Cama Pet Ortopédica'],
+            [
+                'description' => 'Cama com espuma ortopédica para cães e gatos de todas as raças.',
+                'price' => 189.90,
+                'stock_quantity' => 0,
+                'is_highlighted' => false,
+            ]
+        );
+
         // 5. Liga Produtos às Categorias (MUITOS-PARA-MUITOS)
         $product1->categories()->sync([$catC->id, $catA->id]); // Produto 1 está em Alimentos e Promoções
         $product2->categories()->sync([$catB->id]); // Produto 2 está em Acessórios Pet
+        $product3->categories()->sync([$catB->id]); // Produto 3 está em Acessórios Pet
 
         // 6. Cria Imagens para os Produtos
         // Produto 1 - Ração (2 imagens)

@@ -87,35 +87,32 @@ class ProductController extends Controller
             $query->where('stock_quantity', '<=', $request->stock_max);
         }
 
-        // Filtro de produtos em estoque (maior que 0)
-        if ($request->has('in_stock') && $request->boolean('in_stock')) {
-            $query->where('stock_quantity', '>', 0);
-        }
-
-        // Filtro de produtos sem estoque
+        // Filtro de produtos sem estoque (retorna APENAS sem estoque)
         if ($request->has('out_of_stock') && $request->boolean('out_of_stock')) {
             $query->where('stock_quantity', '=', 0);
         }
 
-        // Por padrão, esconde produtos sem estoque (a menos que out_of_stock=true)
-        if (!$request->has('out_of_stock') || !$request->boolean('out_of_stock')) {
+        // Filtro de produtos com estoque (retorna APENAS com estoque)
+        if ($request->has('in_stock') && $request->boolean('in_stock')) {
             $query->where('stock_quantity', '>', 0);
         }
 
         // Ordenação
         if ($request->has('sort_by')) {
             $sortBy = $request->sort_by;
-            $sortOrder = $request->get('sort_order', 'asc'); // asc ou desc
+            $sortOrder = $request->get('sort_order', 'asc');
 
-            // Valida campos permitidos para ordenação
             $allowedSorts = ['name', 'price', 'stock_quantity', 'created_at', 'updated_at'];
-            
+
             if (in_array($sortBy, $allowedSorts)) {
-                $query->orderBy($sortBy, $sortOrder);
+                // Sem estoque sempre vai pro final, mesmo com sort_by customizado
+                $query->orderByRaw('CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END')
+                      ->orderBy($sortBy, $sortOrder);
             }
         } else {
-            // Ordenação padrão: destacados primeiro, depois por ordem alfabética
-            $query->orderBy('is_highlighted', 'desc')
+            // Ordenação padrão: destacados primeiro, depois alfabético, sem estoque por último
+            $query->orderByRaw('CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END')
+                  ->orderBy('is_highlighted', 'desc')
                   ->orderBy('name', 'asc');
         }
 
