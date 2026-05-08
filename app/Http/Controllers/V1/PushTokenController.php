@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PushToken;
 use Illuminate\Http\Request;
+use App\Support\ApiMessages;
 
 class PushTokenController extends Controller
 {
@@ -27,8 +28,7 @@ class PushTokenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Push token registered.',
-            'data' => null,
+            'message' => ApiMessages::PUSH_TOKEN_REGISTERED,
         ], 201);
     }
 
@@ -49,8 +49,7 @@ class PushTokenController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Push token removed.',
-            'data' => null,
+            'message' => ApiMessages::PUSH_TOKEN_REMOVED,
         ]);
     }
 }

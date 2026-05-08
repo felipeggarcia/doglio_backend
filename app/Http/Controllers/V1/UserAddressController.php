@@ -6,6 +6,7 @@ use App\Models\UserAddress;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserAddressResource;
 use Illuminate\Http\Request;
+use App\Support\ApiMessages;
 
 class UserAddressController extends Controller
 {
@@ -58,9 +59,11 @@ class UserAddressController extends Controller
             'is_primary' => $request->boolean('is_primary'),
         ]);
 
-        return (new UserAddressResource($address))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::ADDRESS_CREATED,
+            'data' => new UserAddressResource($address),
+        ], 201);
     }
 
     /**
@@ -90,7 +93,11 @@ class UserAddressController extends Controller
 
         $address->update($data);
 
-        return new UserAddressResource($address);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::ADDRESS_UPDATED,
+            'data' => new UserAddressResource($address),
+        ]);
     }
 
     /**
@@ -105,7 +112,7 @@ class UserAddressController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Address deleted successfully',
+            'message' => ApiMessages::ADDRESS_DELETED,
         ]);
     }
 
@@ -123,6 +130,10 @@ class UserAddressController extends Controller
 
         $address->update(['is_primary' => true]);
 
-        return new UserAddressResource($address);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::ADDRESS_PRIMARY_SET,
+            'data' => new UserAddressResource($address),
+        ]);
     }
 }

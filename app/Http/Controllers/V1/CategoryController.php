@@ -10,6 +10,7 @@ use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Requests\V1\Admin\CategoryStoreRequest;
 use App\Http\Requests\V1\Admin\CategoryUpdateRequest;
+use App\Support\ApiMessages;
 
 class CategoryController extends Controller
 {
@@ -22,7 +23,7 @@ class CategoryController extends Controller
         $cacheKey = "categories.index.v{$version}." . md5(http_build_query($request->query()));
 
         $categories = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($request) {
-            $query = Category::query();
+            $query = Category::query()->where('is_active', true);
 
             if ($request->has('is_highlighted')) {
                 $query->where('is_highlighted', $request->boolean('is_highlighted'));
@@ -73,9 +74,11 @@ class CategoryController extends Controller
 
         Cache::increment('categories.version');
 
-        return (new CategoryResource($category))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::CATEGORY_CREATED,
+            'data' => new CategoryResource($category),
+        ], 201);
     }
 
     /**
@@ -94,7 +97,11 @@ class CategoryController extends Controller
 
         Cache::increment('categories.version');
 
-        return new CategoryResource($category);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::CATEGORY_UPDATED,
+            'data' => new CategoryResource($category),
+        ]);
     }
 
     /**
@@ -108,7 +115,26 @@ class CategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Category deleted successfully'
+            'message' => ApiMessages::CATEGORY_DELETED,
         ]);
     }
+
+    /**
+     * Listagem completa de categorias para admin (inclui inativas e deletadas).
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = Category::withCount('products');
+
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        if ($request->has('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        return CategoryResource::collection($query->get());
+    }
+
 }

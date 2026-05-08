@@ -21,11 +21,13 @@ class Product extends Model
         'stock_quantity',
         'image_url',
         'is_highlighted',
+        'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'is_highlighted' => 'boolean',
+        'is_active' => 'boolean',
         'stock_quantity' => 'integer',
     ];
 

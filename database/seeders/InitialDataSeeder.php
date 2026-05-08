@@ -50,9 +50,9 @@ class InitialDataSeeder extends Seeder
         );
 
         // 3. Cria Categorias
-        $catA = Category::updateOrCreate(['name' => 'Promoções'], ['slug' => 'promocoes', 'is_highlighted' => true]);
-        $catB = Category::updateOrCreate(['name' => 'Acessórios Pet'], ['slug' => 'acessorios-pet', 'is_highlighted' => true]);
-        $catC = Category::updateOrCreate(['name' => 'Alimentos'], ['slug' => 'alimentos', 'is_highlighted' => false]);
+        $catA = Category::updateOrCreate(['name' => 'Promoções'], ['slug' => 'promocoes', 'is_highlighted' => true, 'is_active' => true]);
+        $catB = Category::updateOrCreate(['name' => 'Acessórios Pet'], ['slug' => 'acessorios-pet', 'is_highlighted' => true, 'is_active' => true]);
+        $catC = Category::updateOrCreate(['name' => 'Alimentos'], ['slug' => 'alimentos', 'is_highlighted' => false, 'is_active' => true]);
         
         // 4. Cria Produtos
         $product1 = Product::updateOrCreate(
@@ -62,6 +62,7 @@ class InitialDataSeeder extends Seeder
                 'price' => 150.00,
                 'stock_quantity' => 25,
                 'is_highlighted' => true,
+                'is_active' => true,
             ]
         );
 
@@ -72,6 +73,7 @@ class InitialDataSeeder extends Seeder
                 'price' => 45.90,
                 'stock_quantity' => 50,
                 'is_highlighted' => false,
+                'is_active' => true,
             ]
         );
 
@@ -82,6 +84,7 @@ class InitialDataSeeder extends Seeder
                 'price' => 189.90,
                 'stock_quantity' => 0,
                 'is_highlighted' => false,
+                'is_active' => true,
             ]
         );
 

@@ -20,6 +20,7 @@ class CategoryResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'is_highlighted' => (bool) $this->is_highlighted,
+            'is_active' => (bool) $this->is_active,
             'products_count' => $this->when(isset($this->products_count), $this->products_count),
         ];
     }

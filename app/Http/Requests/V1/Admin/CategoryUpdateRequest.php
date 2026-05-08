@@ -19,6 +19,7 @@ class CategoryUpdateRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:100', Rule::unique('categories')->ignore($this->route('category'))],
             'is_highlighted' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 }

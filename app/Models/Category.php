@@ -15,11 +15,14 @@ class Category extends Model
     protected $fillable = [
         'name',
         'slug',
+        'description',
         'is_highlighted',
+        'is_active',
     ];
 
     protected $casts = [
         'is_highlighted' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function products(): BelongsToMany

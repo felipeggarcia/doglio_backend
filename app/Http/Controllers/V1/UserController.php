@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Support\ApiMessages;
 
 class UserController extends Controller
 {
@@ -65,7 +66,11 @@ class UserController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        return new UserResource($user);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::USER_CREATED,
+            'data' => new UserResource($user),
+        ], 201);
     }
 
     /**
@@ -99,7 +104,11 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return new UserResource($user);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::USER_UPDATED,
+            'data' => new UserResource($user),
+        ]);
     }
 
     /**
@@ -111,7 +120,7 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User deleted successfully'
+            'message' => ApiMessages::USER_DELETED,
         ]);
     }
 }

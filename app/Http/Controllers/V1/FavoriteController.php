@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\UserFavorite;
 use Illuminate\Http\Request;
 use Vinkla\Hashids\Facades\Hashids;
+use App\Support\ApiMessages;
 
 class FavoriteController extends Controller
 {
@@ -43,7 +44,7 @@ class FavoriteController extends Controller
         if (!$product) {
             return response()->json([
                 'success' => false,
-                'message' => 'Product not found.',
+                'message' => ApiMessages::PRODUCT_NOT_FOUND,
                 'error' => ['code' => 'RESOURCE_NOT_FOUND', 'details' => null],
             ], 404);
         }
@@ -53,7 +54,7 @@ class FavoriteController extends Controller
         if ($user->favorites()->where('product_id', $product->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Product is already in your favorites.',
+                'message' => ApiMessages::FAVORITE_ALREADY_EXISTS,
                 'error' => ['code' => 'ALREADY_FAVORITED', 'details' => null],
             ], 422);
         }
@@ -67,7 +68,7 @@ class FavoriteController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Product added to favorites.',
+            'message' => ApiMessages::FAVORITE_ADDED,
             'data' => new FavoriteResource($favorite),
         ], 201);
     }
@@ -84,8 +85,7 @@ class FavoriteController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Product removed from favorites.',
-            'data' => null,
+            'message' => ApiMessages::FAVORITE_REMOVED,
         ]);
     }
 
@@ -101,7 +101,7 @@ class FavoriteController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Notification preference updated.',
+            'message' => ApiMessages::FAVORITE_NOTIFY_UPDATED,
             'data' => ['notify_on_restock' => $favorite->notify_on_restock],
         ]);
     }

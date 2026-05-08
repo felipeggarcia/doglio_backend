@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\ApiMessages;
 
 class StockMovementController extends Controller
 {
@@ -77,7 +78,7 @@ class StockMovementController extends Controller
                 if ($type === 'out' && $quantity > $stockBefore) {
                     abort(response()->json([
                         'success' => false,
-                        'message' => 'Estoque insuficiente para esta saída',
+                        'message' => ApiMessages::PRODUCT_INSUFFICIENT_STOCK,
                         'error'   => [
                             'code'    => 'INSUFFICIENT_STOCK',
                             'details' => [
@@ -105,7 +106,7 @@ class StockMovementController extends Controller
         if ($movement === null) {
             return response()->json([
                 'success' => true,
-                'message' => 'Estoque já está no valor indicado, nenhuma alteração necessária',
+                'message' => ApiMessages::STOCK_NO_CHANGE,
             ]);
         }
 
@@ -113,7 +114,7 @@ class StockMovementController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Movimentação de estoque registrada com sucesso',
+            'message' => ApiMessages::STOCK_MOVEMENT_CREATED,
             'data'    => new StockMovementResource($movement),
         ], 201);
     }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PromotionResource;
 use Illuminate\Http\Request;
 use Vinkla\Hashids\Facades\Hashids;
+use App\Support\ApiMessages;
 
 class PromotionController extends Controller
 {
@@ -64,10 +65,10 @@ class PromotionController extends Controller
         if ($data['type'] === 'percentage' && $data['discount_value'] > 100) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::PROMOTION_PERCENTAGE_LIMIT,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
-                    'details' => ['discount_value' => ['Percentage discount cannot exceed 100']],
+                    'details' => ['discount_value' => [ApiMessages::PROMOTION_PERCENTAGE_LIMIT]],
                 ]
             ], 422);
         }
@@ -95,9 +96,11 @@ class PromotionController extends Controller
             $promotion->products()->sync($realIds);
         }
 
-        return (new PromotionResource($promotion))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::PROMOTION_CREATED,
+            'data' => new PromotionResource($promotion),
+        ], 201);
     }
 
     /**
@@ -124,17 +127,21 @@ class PromotionController extends Controller
         if ($type === 'percentage' && $discount > 100) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::PROMOTION_PERCENTAGE_LIMIT,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
-                    'details' => ['discount_value' => ['Percentage discount cannot exceed 100']],
+                    'details' => ['discount_value' => [ApiMessages::PROMOTION_PERCENTAGE_LIMIT]],
                 ]
             ], 422);
         }
 
         $promotion->update($data);
 
-        return new PromotionResource($promotion->fresh());
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::PROMOTION_UPDATED,
+            'data' => new PromotionResource($promotion->fresh()),
+        ]);
     }
 
     /**
@@ -147,7 +154,7 @@ class PromotionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Promotion deleted successfully',
+            'message' => ApiMessages::PROMOTION_DELETED,
         ]);
     }
 
@@ -172,7 +179,7 @@ class PromotionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Products attached to promotion',
+            'message' => ApiMessages::PROMOTION_PRODUCTS_ATTACHED,
         ]);
     }
 
@@ -197,7 +204,7 @@ class PromotionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Products detached from promotion',
+            'message' => ApiMessages::PROMOTION_PRODUCTS_DETACHED,
         ]);
     }
 }

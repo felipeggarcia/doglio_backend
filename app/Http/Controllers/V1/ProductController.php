@@ -9,6 +9,7 @@ use App\Http\Resources\StockMovementResource;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ApiMessages;
 
 class ProductController extends Controller
 {
@@ -17,7 +18,8 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['categories', 'images', 'primaryImage']);
+        $query = Product::with(['categories', 'images', 'primaryImage'])
+            ->where('is_active', true);
 
         // Filtro por categoria
         if ($request->has('category_id')) {
@@ -121,6 +123,45 @@ class ProductController extends Controller
     }
 
     /**
+     * Listagem completa de produtos para admin (inclui deletados).
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = Product::with(['categories', 'images', 'primaryImage']);
+
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        if ($request->has('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->has('is_highlighted')) {
+            $query->where('is_highlighted', $request->boolean('is_highlighted'));
+        }
+
+        if ($request->has('out_of_stock') && $request->boolean('out_of_stock')) {
+            $query->where('stock_quantity', 0);
+        }
+
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSorts = ['name', 'price', 'stock_quantity', 'created_at', 'updated_at'];
+
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        $products = $query->paginate($request->get('per_page', 15));
+
+        return ProductResource::collection($products);
+    }
+
+    /**
      * Display the specified product
      */
     public function show(Product $product)
@@ -190,7 +231,11 @@ class ProductController extends Controller
             }
         }
 
-        return new ProductResource($product->load(['categories', 'images', 'primaryImage']));
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::PRODUCT_CREATED,
+            'data' => new ProductResource($product->load(['categories', 'images', 'primaryImage'])),
+        ], 201);
     }
 
     /**
@@ -203,6 +248,7 @@ class ProductController extends Controller
             'description'    => 'sometimes|string',
             'price'          => 'sometimes|numeric|min:0',
             'is_highlighted' => 'boolean',
+            'is_active'      => 'boolean',
             'category_ids'   => 'nullable|array',
             'category_ids.*' => 'string',
             'images'         => 'nullable|array|max:6',
@@ -216,6 +262,7 @@ class ProductController extends Controller
             'description',
             'price',
             'is_highlighted',
+            'is_active',
         ]));
 
         if ($request->has('category_ids')) {
@@ -259,10 +306,10 @@ class ProductController extends Controller
             if ($currentCount + count($request->file('images')) > 6) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Image limit exceeded',
+                    'message' => ApiMessages::PRODUCT_IMAGE_LIMIT,
                     'error' => [
                         'code' => 'IMAGE_LIMIT_EXCEEDED',
-                        'details' => 'Maximum of 6 images per product allowed',
+                        'details' => ApiMessages::PRODUCT_IMAGE_LIMIT,
                         'current_count' => $currentCount,
                         'max_allowed' => 6
                     ]
@@ -291,7 +338,11 @@ class ProductController extends Controller
             }
         }
 
-        return new ProductResource($product->load(['categories', 'images', 'primaryImage']));
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::PRODUCT_UPDATED,
+            'data' => new ProductResource($product->load(['categories', 'images', 'primaryImage'])),
+        ]);
     }
 
     /**
@@ -303,7 +354,7 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Product deleted successfully'
+            'message' => ApiMessages::PRODUCT_DELETED,
         ]);
     }
 
@@ -343,4 +394,5 @@ class ProductController extends Controller
 
         return StockMovementResource::collection($movements);
     }
+
 }

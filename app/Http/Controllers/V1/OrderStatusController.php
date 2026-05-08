@@ -10,6 +10,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\ApiMessages;
 
 class OrderStatusController extends Controller
 {
@@ -58,7 +59,7 @@ class OrderStatusController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Order status updated.',
+            'message' => ApiMessages::ORDER_STATUS_UPDATED,
             'data' => new OrderResource($order),
         ]);
     }

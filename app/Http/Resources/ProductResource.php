@@ -26,6 +26,7 @@ class ProductResource extends JsonResource
             ),
             'in_stock' => $this->stock_quantity > 0,
             'is_highlighted' => (bool) $this->is_highlighted,
+            'is_active' => (bool) $this->is_active,
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
             'primary_image' => new ProductImageResource($this->whenLoaded('primaryImage')),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),

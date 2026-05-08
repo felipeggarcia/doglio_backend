@@ -13,6 +13,7 @@ use App\Models\UserAddress;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use Illuminate\Http\Request;
+use App\Support\ApiMessages;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Vinkla\Hashids\Facades\Hashids;
@@ -124,10 +125,10 @@ class OrderController extends Controller
         if (!$paymentMethod) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::VALIDATION_FAILED,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
-                    'details' => ['payment_method_id' => ['Invalid or inactive payment method']],
+                    'details' => ['payment_method_id' => [ApiMessages::ORDER_INVALID_PAYMENT]],
                 ]
             ], 422);
         }
@@ -140,10 +141,10 @@ class OrderController extends Controller
         if ($cartItems->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cart is empty',
+                'message' => ApiMessages::CART_EMPTY,
                 'error' => [
                     'code' => 'CART_EMPTY',
-                    'details' => 'Add products to your cart before checkout',
+                    'details' => ApiMessages::CART_EMPTY,
                 ]
             ], 422);
         }
@@ -164,7 +165,7 @@ class OrderController extends Controller
         if (!empty($stockErrors)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Insufficient stock',
+                'message' => ApiMessages::ORDER_INSUFFICIENT_STOCK,
                 'error' => [
                     'code' => 'INSUFFICIENT_STOCK',
                     'details' => $stockErrors,
@@ -244,7 +245,7 @@ class OrderController extends Controller
                         validator([], []),
                         response()->json([
                             'success' => false,
-                            'message' => 'Insufficient stock',
+                            'message' => ApiMessages::ORDER_INSUFFICIENT_STOCK,
                             'error' => [
                                 'code' => 'INSUFFICIENT_STOCK',
                                 'details' => [[
@@ -320,8 +321,10 @@ class OrderController extends Controller
 
         $order->load(['orderItems.product.primaryImage', 'payment.paymentMethod']);
 
-        return (new OrderResource($order))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json([
+            'success' => true,
+            'message' => ApiMessages::ORDER_CREATED,
+            'data' => new OrderResource($order),
+        ], 201);
     }
 }

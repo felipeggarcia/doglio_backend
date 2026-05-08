@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\Review;
 use Illuminate\Http\Request;
+use App\Support\ApiMessages;
 
 class ReviewController extends Controller
 {
@@ -53,7 +54,7 @@ class ReviewController extends Controller
         if (!$hasPurchased) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only review a product after receiving it.',
+                'message' => ApiMessages::REVIEW_PURCHASE_REQUIRED,
                 'error' => ['code' => 'PURCHASE_REQUIRED', 'details' => null],
             ], 403);
         }
@@ -61,7 +62,7 @@ class ReviewController extends Controller
         if ($product->reviews()->where('user_id', $user->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'You have already reviewed this product.',
+                'message' => ApiMessages::REVIEW_ALREADY_SUBMITTED,
                 'error' => ['code' => 'ALREADY_REVIEWED', 'details' => null],
             ], 422);
         }
@@ -76,7 +77,7 @@ class ReviewController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Review submitted successfully.',
+            'message' => ApiMessages::REVIEW_SUBMITTED,
             'data' => new ReviewResource($review),
         ], 201);
     }
@@ -93,8 +94,7 @@ class ReviewController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Review deleted.',
-            'data' => null,
+            'message' => ApiMessages::REVIEW_DELETED,
         ]);
     }
 }

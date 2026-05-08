@@ -10,6 +10,7 @@ use App\Http\Resources\CartItemResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
+use App\Support\ApiMessages;
 
 class CartController extends Controller
 {
@@ -45,10 +46,10 @@ class CartController extends Controller
         if (!empty($invalidIds)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::VALIDATION_FAILED,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
-                    'details' => ['product_id' => ['Invalid product IDs: ' . implode(', ', $invalidIds)]],
+                    'details' => ['product_id' => [ApiMessages::CART_INVALID_PRODUCT_IDS . ': ' . implode(', ', $invalidIds)]],
                 ]
             ], 422);
         }
@@ -64,7 +65,7 @@ class CartController extends Controller
         if (!empty($missingIds)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Product not found',
+                'message' => ApiMessages::CART_PRODUCTS_NOT_FOUND,
                 'error' => ['code' => 'PRODUCT_NOT_FOUND'],
             ], 422);
         }
@@ -89,7 +90,7 @@ class CartController extends Controller
             }
         });
 
-        return $this->cartResponse($user);
+        return $this->cartResponse($user, ApiMessages::CART_SYNCED);
     }
 
     /**
@@ -111,7 +112,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cart cleared successfully',
+            'message' => ApiMessages::CART_CLEARED,
         ]);
     }
 
@@ -131,7 +132,7 @@ class CartController extends Controller
         if ($items->isEmpty()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Cart is valid',
+                'message' => ApiMessages::CART_VALID,
                 'data' => ['valid' => true, 'changes' => []],
             ]);
         }
@@ -196,7 +197,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => empty($changes) ? 'Cart is valid' : 'Cart has changes',
+            'message' => empty($changes) ? ApiMessages::CART_VALID : ApiMessages::CART_HAS_CHANGES,
             'data' => [
                 'valid' => empty($changes),
                 'changes' => $changes,
@@ -207,7 +208,7 @@ class CartController extends Controller
     /**
      * Monta resposta padrão do carrinho.
      */
-    private function cartResponse($user)
+    private function cartResponse($user, string $message = null)
     {
         $items = CartItem::where('user_id', $user->id)
             ->with(['product.primaryImage', 'product.promotions', 'promotion'])
@@ -223,8 +224,9 @@ class CartController extends Controller
 
         $total = $items->sum(fn($item) => (float) $item->unit_price * $item->quantity);
 
-        return response()->json([
+        return response()->json(array_filter([
             'success' => true,
+            'message' => $message,
             'data' => [
                 'items' => CartItemResource::collection($items),
                 'total' => number_format($total, 2, '.', ''),
@@ -232,6 +234,6 @@ class CartController extends Controller
                 'has_stock_warning' => $hasStockWarning,
                 'has_price_change' => $hasPriceChange,
             ],
-        ]);
+        ]));
     }
 }

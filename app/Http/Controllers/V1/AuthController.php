@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Support\ApiMessages;
 
 class AuthController extends Controller
 {
@@ -39,7 +40,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User registered successfully',
+            'message' => ApiMessages::AUTH_REGISTERED,
             'data' => [
                 'user' => new UserResource($user),
                 'token' => $token,
@@ -65,10 +66,10 @@ class AuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials',
+                'message' => ApiMessages::AUTH_INVALID_CREDENTIALS,
                 'error' => [
                     'code' => 'INVALID_CREDENTIALS',
-                    'details' => 'The provided email or password is incorrect'
+                    'details' => ApiMessages::AUTH_INVALID_CREDENTIALS
                 ]
             ], 401);
         }
@@ -77,10 +78,10 @@ class AuthController extends Controller
         if (!$user->is_active) {
             return response()->json([
                 'success' => false,
-                'message' => 'Account inactive',
+                'message' => ApiMessages::AUTH_ACCOUNT_INACTIVE,
                 'error' => [
                     'code' => 'ACCOUNT_INACTIVE',
-                    'details' => 'Your account has been deactivated. Please contact support'
+                    'details' => ApiMessages::AUTH_ACCOUNT_INACTIVE
                 ]
             ], 403);
         }
@@ -97,7 +98,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Login successful',
+            'message' => ApiMessages::AUTH_LOGIN,
             'data' => [
                 'user' => new UserResource($user),
                 'token' => $token,
@@ -120,7 +121,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logged out successfully'
+            'message' => ApiMessages::AUTH_LOGOUT
         ]);
     }
 

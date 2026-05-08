@@ -26,6 +26,7 @@ class CategoryFactory extends Factory
             'name' => ucfirst($name),
             'slug' => Str::slug($name) . '-' . fake()->unique()->numberBetween(1, 9999),
             'is_highlighted' => fake()->boolean(30), // 30% chance de ser destacado
+            'is_active' => true,
         ];
     }
 

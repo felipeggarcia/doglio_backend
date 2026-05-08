@@ -99,6 +99,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/promotions/{promotion}/products', [PromotionController::class, 'detachProducts']);
 
             // Produtos
+            Route::get('/products', [ProductController::class, 'adminIndex']);
             Route::post('/products', [ProductController::class, 'store']);
             Route::put('/products/{product}', [ProductController::class, 'update']);
             Route::delete('/products/{product}', [ProductController::class, 'destroy']);
@@ -111,6 +112,7 @@ Route::prefix('v1')->group(function () {
             Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);
 
             // Categorias
+            Route::get('/categories', [CategoryController::class, 'adminIndex']);
             Route::post('/categories', [CategoryController::class, 'store']);
             Route::put('/categories/{category}', [CategoryController::class, 'update']);
             Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
