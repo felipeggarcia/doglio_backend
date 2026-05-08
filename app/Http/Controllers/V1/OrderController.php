@@ -210,12 +210,14 @@ class OrderController extends Controller
                     );
                 }
 
+                $stockBefore = (int) $product->stock_quantity;
                 $product->decrement('stock_quantity', $item->quantity);
 
                 StockMovement::create([
                     'product_id'     => $product->id,
                     'type'           => 'out',
                     'quantity'       => $item->quantity,
+                    'stock_before'   => $stockBefore,
                     'reason'         => 'sale',
                     'reference_type' => 'order',
                     'reference_id'   => $order->id,

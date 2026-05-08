@@ -14,6 +14,7 @@ use App\Http\Controllers\V1\PromotionController;
 use App\Http\Controllers\V1\ReviewController;
 use App\Http\Controllers\V1\FavoriteController;
 use App\Http\Controllers\V1\PushTokenController;
+use App\Http\Controllers\V1\StockMovementController;
 use App\Http\Resources\UserResource;
 
 // ==========================================
@@ -102,6 +103,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/products', [ProductController::class, 'store']);
             Route::put('/products/{product}', [ProductController::class, 'update']);
             Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+            Route::post('/products/{product}/stock', [StockMovementController::class, 'store']);
 
             // Status de pedidos
             Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);

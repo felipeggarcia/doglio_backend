@@ -4,7 +4,6 @@ namespace App\Http\Controllers\V1;
 
 use App\Models\Product;
 use App\Models\ProductImage;
-use App\Models\StockMovement;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\StockMovementResource;
 use Illuminate\Http\Request;
@@ -200,44 +199,24 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
-            'price' => 'sometimes|numeric|min:0',
-            'stock_quantity' => 'sometimes|integer|min:0',
+            'name'           => 'sometimes|string|max:255',
+            'description'    => 'sometimes|string',
+            'price'          => 'sometimes|numeric|min:0',
             'is_highlighted' => 'boolean',
-            'category_ids' => 'nullable|array',
+            'category_ids'   => 'nullable|array',
             'category_ids.*' => 'string',
-            'images' => 'nullable|array|max:6',
-            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
-            'remove_images' => 'nullable|array',
-            'remove_images.*' => 'string',
+            'images'         => 'nullable|array|max:6',
+            'images.*'       => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+            'remove_images'  => 'nullable|array',
+            'remove_images.*'=> 'string',
         ]);
 
         $product->update($request->only([
             'name',
             'description',
             'price',
-            'stock_quantity',
             'is_highlighted',
         ]));
-
-        // Registra movimentação de estoque quando stock_quantity for alterado manualmente
-        if ($request->has('stock_quantity')) {
-            $oldStock = (int) $product->getOriginal('stock_quantity');
-            $newStock = (int) $request->stock_quantity;
-
-            if ($newStock !== $oldStock) {
-                $diff = abs($newStock - $oldStock);
-                StockMovement::create([
-                    'product_id' => $product->id,
-                    'type'       => $newStock > $oldStock ? 'in' : 'out',
-                    'quantity'   => $diff,
-                    'reason'     => $newStock > $oldStock ? 'purchase' : 'manual_adjustment',
-                    'user_id'    => $request->user()->id,
-                    'notes'      => 'Ajuste manual via painel admin',
-                ]);
-            }
-        }
 
         if ($request->has('category_ids')) {
             // Decodifica Hashids para IDs reais (ou usa diretamente se hashids desabilitado)

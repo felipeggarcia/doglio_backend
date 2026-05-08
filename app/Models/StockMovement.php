@@ -18,6 +18,7 @@ class StockMovement extends Model
         'product_id',
         'type',
         'quantity',
+        'stock_before',
         'reason',
         'reference_type',
         'reference_id',
@@ -26,8 +27,9 @@ class StockMovement extends Model
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
-        'created_at' => 'datetime',
+        'quantity'     => 'integer',
+        'stock_before' => 'integer',
+        'created_at'   => 'datetime',
     ];
 
     public function product(): BelongsTo
