@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
@@ -17,24 +18,27 @@ class CategoryController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Category::query();
+        $version = Cache::get('categories.version', 1);
+        $cacheKey = "categories.index.v{$version}." . md5(http_build_query($request->query()));
 
-        // Filtro por destacados
-        if ($request->has('is_highlighted')) {
-            $query->where('is_highlighted', $request->boolean('is_highlighted'));
-        }
+        $categories = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($request) {
+            $query = Category::query();
 
-        // Busca por nome
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
+            if ($request->has('is_highlighted')) {
+                $query->where('is_highlighted', $request->boolean('is_highlighted'));
+            }
 
-        // Conta produtos se solicitado
-        if ($request->boolean('with_count')) {
-            $query->withCount('products');
-        }
+            if ($request->has('search')) {
+                $query->where('name', 'like', '%' . $request->search . '%');
+            }
 
-        $categories = $query->get();
+            if ($request->boolean('with_count')) {
+                $query->withCount('products');
+            }
+
+            return $query->get();
+        });
+
         return CategoryResource::collection($categories);
     }
 
@@ -66,7 +70,9 @@ class CategoryController extends Controller
         $category = Category::create($request->validated() + [
             'slug' => \Str::slug($request->name)
         ]);
-        
+
+        Cache::increment('categories.version');
+
         return (new CategoryResource($category))
             ->response()
             ->setStatusCode(201);
@@ -86,6 +92,8 @@ class CategoryController extends Controller
 
         $category->update($data);
 
+        Cache::increment('categories.version');
+
         return new CategoryResource($category);
     }
 
@@ -95,6 +103,8 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         $category->delete();
+
+        Cache::increment('categories.version');
 
         return response()->json([
             'success' => true,

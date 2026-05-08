@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\CartItem;
 use App\Models\CartSnapshot;
+use App\Models\Promotion;
 use App\Models\StockMovement;
 use App\Models\UserAddress;
 use App\Http\Controllers\Controller;
@@ -226,6 +227,11 @@ class OrderController extends Controller
                     'quantity'   => $item->quantity,
                     'unit_price' => $item->unit_price,
                 ]);
+
+                // Incrementa uso da promoção (se o item teve desconto de promoção)
+                if ($item->promotion_id) {
+                    Promotion::where('id', $item->promotion_id)->increment('uses_count');
+                }
             }
 
             // Congela o estado completo do carrinho num único snapshot

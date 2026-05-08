@@ -87,9 +87,7 @@ class ReviewController extends Controller
      */
     public function destroy(Request $request, Review $review)
     {
-        if ($review->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $review);
 
         $review->delete();
 

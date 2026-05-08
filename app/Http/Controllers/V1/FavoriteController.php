@@ -78,9 +78,7 @@ class FavoriteController extends Controller
      */
     public function destroy(Request $request, UserFavorite $favorite)
     {
-        if ($favorite->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $favorite);
 
         $favorite->delete();
 
@@ -97,9 +95,7 @@ class FavoriteController extends Controller
      */
     public function toggleNotify(Request $request, UserFavorite $favorite)
     {
-        if ($favorite->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('update', $favorite);
 
         $favorite->update(['notify_on_restock' => !$favorite->notify_on_restock]);
 

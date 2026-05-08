@@ -70,9 +70,7 @@ class UserAddressController extends Controller
     public function update(Request $request, UserAddress $address)
     {
         // Garante que o endereço pertence ao usuário autenticado
-        if ($address->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('update', $address);
 
         $request->validate([
             'label' => 'nullable|string|max:100',
@@ -101,9 +99,7 @@ class UserAddressController extends Controller
      */
     public function destroy(Request $request, UserAddress $address)
     {
-        if ($address->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $address);
 
         $address->delete();
 
@@ -119,9 +115,7 @@ class UserAddressController extends Controller
      */
     public function setPrimary(Request $request, UserAddress $address)
     {
-        if ($address->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('setPrimary', $address);
 
         // Remove primary de todos os outros
         UserAddress::where('user_id', $request->user()->id)

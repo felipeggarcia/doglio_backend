@@ -26,28 +26,32 @@ Route::prefix('v1')->group(function () {
     // ROTAS PÚBLICAS (Sem autenticação)
     // ==========================================
 
-    // Autenticação
-    Route::post('/register', [AuthController::class, 'register']);//ok
-    Route::post('/login', [AuthController::class, 'login']);//ok
+    // Autenticação — limite mais restrito (10/min por IP)
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('/register', [AuthController::class, 'register']);//ok
+        Route::post('/login', [AuthController::class, 'login']);//ok
+    });
 
     // Produtos (Leitura pública)
-    Route::get('/products', [ProductController::class, 'index']);//ok
-    Route::get('/products/{product}', [ProductController::class, 'show']);//ok
-    Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);//ok
+    Route::middleware('throttle:public')->group(function () {
+        Route::get('/products', [ProductController::class, 'index']);//ok
+        Route::get('/products/{product}', [ProductController::class, 'show']);//ok
+        Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);//ok
 
-    // Categorias (Leitura pública)
-    Route::get('/categories', [CategoryController::class, 'index']);//ok
-    Route::get('/categories/{category}', [CategoryController::class, 'show']);//ok
+        // Categorias (Leitura pública)
+        Route::get('/categories', [CategoryController::class, 'index']);//ok
+        Route::get('/categories/{category}', [CategoryController::class, 'show']);//ok
 
-    // Promoções (Leitura pública — somente ativas)
-    Route::get('/promotions', [PromotionController::class, 'index']);//ok
-    Route::get('/promotions/{promotion}', [PromotionController::class, 'show']);//ok
+        // Promoções (Leitura pública — somente ativas)
+        Route::get('/promotions', [PromotionController::class, 'index']);//ok
+        Route::get('/promotions/{promotion}', [PromotionController::class, 'show']);//ok
+    });
 
     // ==========================================
     // ROTAS PROTEGIDAS (Requer autenticação)
     // ==========================================
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         
         // Autenticação
         Route::post('/logout', [AuthController::class, 'logout']);//ok
@@ -57,7 +61,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/cart/sync', [CartController::class, 'sync']);//ok
         Route::get('/cart', [CartController::class, 'show']);//ok
         Route::get('/cart/validate', [CartController::class, 'validate']);//ok
-        Route::delete('/cart', [CartController::class, 'clear']);
+        Route::delete('/cart', [CartController::class, 'clear']);//ok
 
         // Checkout e Pedidos
         Route::post('/checkout', [OrderController::class, 'checkout']);//ok

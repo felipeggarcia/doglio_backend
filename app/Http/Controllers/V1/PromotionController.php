@@ -21,6 +21,9 @@ class PromotionController extends Controller
             ->where(function ($q) {
                 $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
             })
+            ->where(function ($q) {
+                $q->whereNull('max_uses')->orWhereColumn('uses_count', '<', 'max_uses');
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
