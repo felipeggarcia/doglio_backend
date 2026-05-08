@@ -123,16 +123,18 @@ class ProductController extends Controller
     }
 
     /**
-     * Listagem completa de produtos para admin (inclui deletados).
+     * Listagem completa de produtos para admin (inclui inativos).
      */
     public function adminIndex(Request $request)
     {
         $query = Product::with(['categories', 'images', 'primaryImage']);
 
+        // Filtro por ativo/inativo
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
 
+        // Busca genérica (nome ou descrição)
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
@@ -140,14 +142,52 @@ class ProductController extends Controller
             });
         }
 
+        // Filtro por destaque
         if ($request->has('is_highlighted')) {
             $query->where('is_highlighted', $request->boolean('is_highlighted'));
         }
 
-        if ($request->has('out_of_stock') && $request->boolean('out_of_stock')) {
-            $query->where('stock_quantity', 0);
+        // Filtro por categoria (um ou mais hashids: ?category_ids[]=abc&category_ids[]=def)
+        if ($request->has('category_ids')) {
+            $ids = collect((array) $request->category_ids)->map(function ($hashid) {
+                if (config('app.use_hashids', true)) {
+                    $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashid);
+                    return $decoded[0] ?? null;
+                }
+                return is_numeric($hashid) ? (int) $hashid : null;
+            })->filter()->values()->all();
+
+            if (!empty($ids)) {
+                $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $ids));
+            }
         }
 
+        // Filtro por estoque zerado
+        if ($request->has('out_of_stock')) {
+            if ($request->boolean('out_of_stock')) {
+                $query->where('stock_quantity', 0);
+            } else {
+                $query->where('stock_quantity', '>', 0);
+            }
+        }
+
+        // Filtro por faixa de preço
+        if ($request->has('price_min')) {
+            $query->where('price', '>=', $request->price_min);
+        }
+        if ($request->has('price_max')) {
+            $query->where('price', '<=', $request->price_max);
+        }
+
+        // Filtro por data de criação
+        if ($request->has('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Ordenação
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $allowedSorts = ['name', 'price', 'stock_quantity', 'created_at', 'updated_at'];
@@ -179,7 +219,6 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
             'is_highlighted' => 'boolean',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'string',
@@ -191,7 +230,7 @@ class ProductController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
-            'stock_quantity' => $request->stock_quantity,
+            'stock_quantity' => 0,
             'is_highlighted' => $request->boolean('is_highlighted'),
         ]);
 

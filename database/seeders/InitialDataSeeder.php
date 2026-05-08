@@ -88,10 +88,37 @@ class InitialDataSeeder extends Seeder
             ]
         );
 
+        // Produto desativado (is_active = false) — visível só para admin
+        $product4 = Product::updateOrCreate(
+            ['name' => 'Brinquedo Interativo para Gatos'],
+            [
+                'description' => 'Brinquedo com penas e luz LED para entreter gatos.',
+                'price' => 39.90,
+                'stock_quantity' => 15,
+                'is_highlighted' => false,
+                'is_active' => false,
+            ]
+        );
+
+        // Produto deletado (soft delete) — invisível em todas as rotas
+        $product5 = Product::updateOrCreate(
+            ['name' => 'Shampoo Pet Antiquado'],
+            [
+                'description' => 'Produto fora de linha.',
+                'price' => 19.90,
+                'stock_quantity' => 0,
+                'is_highlighted' => false,
+                'is_active' => false,
+            ]
+        );
+        $product5->delete();
+
         // 5. Liga Produtos às Categorias (MUITOS-PARA-MUITOS)
-        $product1->categories()->sync([$catC->id, $catA->id]); // Produto 1 está em Alimentos e Promoções
-        $product2->categories()->sync([$catB->id]); // Produto 2 está em Acessórios Pet
-        $product3->categories()->sync([$catB->id]); // Produto 3 está em Acessórios Pet
+        $product1->categories()->sync([$catC->id, $catA->id]);
+        $product2->categories()->sync([$catB->id]);
+        $product3->categories()->sync([$catB->id]);
+        $product4->categories()->sync([$catB->id]);
+        // product5 está deletado, sem categoria necessária
 
         // 6. Cria Imagens para os Produtos
         // Produto 1 - Ração (2 imagens)
@@ -278,23 +305,25 @@ class InitialDataSeeder extends Seeder
         $admin = User::where('email', 'admin@doglio.com')->first();
 
         StockMovement::create([
-            'product_id' => $product1->id,
-            'type'       => 'in',
-            'quantity'   => 25,
-            'reason'     => 'purchase',
-            'user_id'    => $admin->id,
-            'notes'      => 'Estoque inicial — Ração Super Premium',
-            'created_at' => now()->subDays(60),
+            'product_id'   => $product1->id,
+            'type'         => 'in',
+            'quantity'     => 25,
+            'stock_before' => 0,
+            'reason'       => 'purchase',
+            'user_id'      => $admin->id,
+            'notes'        => 'Estoque inicial — Ração Super Premium',
+            'created_at'   => now()->subDays(60),
         ]);
 
         StockMovement::create([
-            'product_id' => $product2->id,
-            'type'       => 'in',
-            'quantity'   => 50,
-            'reason'     => 'purchase',
-            'user_id'    => $admin->id,
-            'notes'      => 'Estoque inicial — Coleira Anti-pulgas',
-            'created_at' => now()->subDays(60),
+            'product_id'   => $product2->id,
+            'type'         => 'in',
+            'quantity'     => 50,
+            'stock_before' => 0,
+            'reason'       => 'purchase',
+            'user_id'      => $admin->id,
+            'notes'        => 'Estoque inicial — Coleira Anti-pulgas',
+            'created_at'   => now()->subDays(60),
         ]);
 
         // Saída de estoque referente ao pedido histórico
@@ -302,6 +331,7 @@ class InitialDataSeeder extends Seeder
             'product_id'     => $product1->id,
             'type'           => 'out',
             'quantity'       => 1,
+            'stock_before'   => 25,
             'reason'         => 'sale',
             'reference_type' => 'order',
             'reference_id'   => $pastOrder->id,
