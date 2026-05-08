@@ -49,6 +49,54 @@ class OrderController extends Controller
     }
 
     /**
+     * Lista TODOS os pedidos (admin).
+     * GET /api/v1/admin/orders
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = Order::with(['orderItems.product.primaryImage', 'payment.paymentMethod', 'user']);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('user_id')) {
+            $decoded = Hashids::decode($request->user_id);
+            if (!empty($decoded)) {
+                $query->where('user_id', $decoded[0]);
+            }
+        }
+
+        if ($request->filled('delivery_type')) {
+            $query->where('delivery_type', $request->delivery_type);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return OrderResource::collection($orders);
+    }
+
+    /**
+     * Detalhe de qualquer pedido (admin).
+     * GET /api/v1/admin/orders/{order}
+     */
+    public function adminShow(Order $order)
+    {
+        $order->load(['orderItems.product.primaryImage', 'payment.paymentMethod', 'user', 'statusHistory']);
+
+        return new OrderResource($order);
+    }
+
+    /**
      * Converte o carrinho em pedido.
      * POST /api/v1/checkout
      */

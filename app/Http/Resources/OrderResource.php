@@ -21,6 +21,14 @@ class OrderResource extends JsonResource
                 'state' => $this->shipping_state,
                 'zip' => $this->shipping_zip,
             ] : null,
+            'customer' => $this->when(
+                $request->user()?->role === 'admin',
+                fn() => $this->whenLoaded('user', fn() => [
+                    'id'    => $this->user->hashid,
+                    'name'  => $this->user->name,
+                    'email' => $this->user->email,
+                ])
+            ),
             'items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
             'status_history' => OrderStatusHistoryResource::collection($this->whenLoaded('statusHistory')),

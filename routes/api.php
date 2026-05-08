@@ -16,7 +16,6 @@ use App\Http\Controllers\V1\FavoriteController;
 use App\Http\Controllers\V1\PushTokenController;
 use App\Http\Controllers\V1\StockMovementController;
 use App\Http\Resources\UserResource;
-
 // ==========================================
 // API V1
 // ==========================================
@@ -90,8 +89,8 @@ Route::prefix('v1')->group(function () {
         // ------------------------------------------------------------------
         // MÓDULO ADMIN (Apenas administradores)
         // ------------------------------------------------------------------
-        
-        Route::middleware('admin')->group(function () {
+
+        Route::middleware('admin')->prefix('admin')->group(function () {
             // Promoções (CRUD admin)
             Route::post('/promotions', [PromotionController::class, 'store']);
             Route::put('/promotions/{promotion}', [PromotionController::class, 'update']);
@@ -103,9 +102,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/products', [ProductController::class, 'store']);
             Route::put('/products/{product}', [ProductController::class, 'update']);
             Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+            Route::get('/products/{product}/stock', [StockMovementController::class, 'index']);
             Route::post('/products/{product}/stock', [StockMovementController::class, 'store']);
 
-            // Status de pedidos
+            // Pedidos
+            Route::get('/orders', [OrderController::class, 'adminIndex']);
+            Route::get('/orders/{order}', [OrderController::class, 'adminShow']);
             Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);
 
             // Categorias
@@ -113,9 +115,9 @@ Route::prefix('v1')->group(function () {
             Route::put('/categories/{category}', [CategoryController::class, 'update']);
             Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
-            // Usuários (Gerenciamento)
-            Route::get('/users', [UserController::class, 'index']); 
-            Route::post('/users', [UserController::class, 'store']); 
+            // Usuários
+            Route::get('/users', [UserController::class, 'index']);
+            Route::post('/users', [UserController::class, 'store']);
             Route::get('/users/{user}', [UserController::class, 'show']);
             Route::put('/users/{user}', [UserController::class, 'update']);
             Route::delete('/users/{user}', [UserController::class, 'destroy']);
