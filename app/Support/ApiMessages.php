@@ -63,6 +63,7 @@ final class ApiMessages
     const PROMOTION_PRODUCTS_ATTACHED  = 'Produtos vinculados à promoção com sucesso.';
     const PROMOTION_PRODUCTS_DETACHED  = 'Produtos desvinculados da promoção com sucesso.';
     const PROMOTION_PERCENTAGE_LIMIT   = 'Desconto percentual não pode exceder 100%.';
+    const PROMOTION_PRODUCT_CONFLICT   = 'Um ou mais produtos já possuem promoção ativa: :products.';
 
     // -------------------------------------------------------------------------
     // Favorito

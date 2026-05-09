@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Models\Promotion;
+use App\Models\Product;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PromotionResource;
 use Illuminate\Http\Request;
@@ -11,6 +12,56 @@ use App\Support\ApiMessages;
 
 class PromotionController extends Controller
 {
+    /**
+     * Lista promoções (admin) — todas, com filtros.
+     * GET /api/v1/admin/promotions
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = Promotion::with(['products.primaryImage', 'products.promotions']);
+
+        // Filtro por ativo/inativo
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        // Filtro por expiradas (ends_at no passado)
+        if ($request->has('expired')) {
+            if ($request->boolean('expired')) {
+                $query->where('ends_at', '<', now());
+            } else {
+                $query->where(function ($q) {
+                    $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+                });
+            }
+        }
+
+        // Busca por nome
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Filtro por produto(s) (um ou mais hashids — OR entre eles)
+        if ($request->filled('product_ids')) {
+            $productIds = collect((array) $request->product_ids)
+                ->map(fn($h) => Hashids::decode($h)[0] ?? null)
+                ->filter()
+                ->values()
+                ->all();
+
+            if (!empty($productIds)) {
+                $query->whereHas('products', fn($q) => $q->whereIn('products.id', $productIds));
+            }
+        }
+
+        $promotions = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        return PromotionResource::collection($promotions);
+    }
+
     /**
      * Lista promoções ativas (público).
      * GET /api/v1/promotions
@@ -22,8 +73,13 @@ class PromotionController extends Controller
             ->where(function ($q) {
                 $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
             })
-            ->where(function ($q) {
-                $q->whereNull('max_uses')->orWhereColumn('uses_count', '<', 'max_uses');
+            ->whereHas('products', function ($q) {
+                $q->where('products.is_active', true)
+                  ->whereNull('products.deleted_at')
+                  ->where(function ($inner) {
+                      $inner->whereNull('product_promotion.use_limit')
+                            ->orWhereColumn('product_promotion.uses_count', '<', 'product_promotion.use_limit');
+                  });
             })
             ->orderBy('created_at', 'desc')
             ->get();
@@ -32,12 +88,25 @@ class PromotionController extends Controller
     }
 
     /**
-     * Detalhe de uma promoção (público).
+     * Detalhe de uma promoção (público) — só ativas e vigentes.
      * GET /api/v1/promotions/{promotion}
      */
     public function show(Promotion $promotion)
     {
-        return new PromotionResource($promotion);
+        if (!$promotion->isCurrentlyActive()) {
+            abort(404);
+        }
+
+        return new PromotionResource($promotion->load(['products.primaryImage', 'products.promotions']));
+    }
+
+    /**
+     * Detalhe de uma promoção (admin) — qualquer estado.
+     * GET /api/v1/admin/promotions/{promotion}
+     */
+    public function adminShow(Promotion $promotion)
+    {
+        return new PromotionResource($promotion->load(['products.primaryImage', 'products.promotions']));
     }
 
     /**
@@ -55,10 +124,10 @@ class PromotionController extends Controller
             'ends_at' => 'nullable|date|after:starts_at',
             'is_active' => 'boolean',
             'min_quantity' => 'nullable|integer|min:1',
-            'max_uses' => 'nullable|integer|min:1',
             // Produtos a vincular
-            'product_ids' => 'nullable|array',
-            'product_ids.*' => 'string',
+            'product_ids'             => 'nullable|array',
+            'product_ids.*.id'        => 'required_if_accepted:product_ids|string',
+            'product_ids.*.use_limit' => 'nullable|integer|min:1',
         ]);
 
         // Valida desconto percentual
@@ -82,24 +151,27 @@ class PromotionController extends Controller
             'ends_at' => $data['ends_at'] ?? null,
             'is_active' => $data['is_active'] ?? true,
             'min_quantity' => $data['min_quantity'] ?? null,
-            'max_uses' => $data['max_uses'] ?? null,
         ]);
 
         // Vincula produtos se informados
         if (!empty($data['product_ids'])) {
-            $realIds = collect($data['product_ids'])
-                ->map(fn($hash) => Hashids::decode($hash)[0] ?? null)
+            $syncData = collect($data['product_ids'])
+                ->mapWithKeys(function ($item) {
+                    $hash = is_array($item) ? ($item['id'] ?? null) : $item;
+                    $useLimit = is_array($item) ? ($item['use_limit'] ?? null) : null;
+                    $realId = Hashids::decode($hash)[0] ?? null;
+                    return $realId ? [$realId => ['use_limit' => $useLimit]] : [];
+                })
                 ->filter()
-                ->values()
                 ->all();
 
-            $promotion->products()->sync($realIds);
+            $promotion->products()->sync($syncData);
         }
 
         return response()->json([
             'success' => true,
             'message' => ApiMessages::PROMOTION_CREATED,
-            'data' => new PromotionResource($promotion),
+            'data' => new PromotionResource($promotion->load(['products.primaryImage', 'products.promotions'])),
         ], 201);
     }
 
@@ -118,7 +190,6 @@ class PromotionController extends Controller
             'ends_at' => 'nullable|date|after:starts_at',
             'is_active' => 'boolean',
             'min_quantity' => 'nullable|integer|min:1',
-            'max_uses' => 'nullable|integer|min:1',
         ]);
 
         $type = $data['type'] ?? $promotion->type;
@@ -140,7 +211,7 @@ class PromotionController extends Controller
         return response()->json([
             'success' => true,
             'message' => ApiMessages::PROMOTION_UPDATED,
-            'data' => new PromotionResource($promotion->fresh()),
+            'data' => new PromotionResource($promotion->load(['products.primaryImage', 'products.promotions'])),
         ]);
     }
 
@@ -159,23 +230,27 @@ class PromotionController extends Controller
     }
 
     /**
-     * Vincula produtos a uma promoção (admin).
+     * Vincula produtos a uma promoção com use_limit individual (admin).
      * POST /api/v1/promotions/{promotion}/products
+     * Body: { "products": [ {"id": "hashid", "use_limit": 30}, {"id": "hashid2", "use_limit": null} ] }
      */
     public function attachProducts(Request $request, Promotion $promotion)
     {
         $request->validate([
-            'product_ids' => 'required|array|min:1',
-            'product_ids.*' => 'required|string',
+            'products'             => 'required|array|min:1',
+            'products.*.id'        => 'required|string',
+            'products.*.use_limit' => 'nullable|integer|min:1',
         ]);
 
-        $realIds = collect($request->product_ids)
-            ->map(fn($hash) => Hashids::decode($hash)[0] ?? null)
+        $syncData = collect($request->products)
+            ->mapWithKeys(function ($item) {
+                $realId = Hashids::decode($item['id'])[0] ?? null;
+                return $realId ? [$realId => ['use_limit' => $item['use_limit'] ?? null]] : [];
+            })
             ->filter()
-            ->values()
             ->all();
 
-        $promotion->products()->syncWithoutDetaching($realIds);
+        $promotion->products()->syncWithoutDetaching($syncData);
 
         return response()->json([
             'success' => true,

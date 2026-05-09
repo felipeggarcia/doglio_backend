@@ -53,7 +53,7 @@ class Product extends Model
 
     public function promotions(): BelongsToMany
     {
-        return $this->belongsToMany(Promotion::class);
+        return $this->belongsToMany(Promotion::class)->withPivot('use_limit', 'uses_count');
     }
 
     public function reviews(): HasMany
@@ -84,9 +84,9 @@ class Product extends Model
                 $p->is_active
                 && $p->starts_at <= $now
                 && ($p->ends_at === null || $p->ends_at > $now)
-                && ($p->max_uses === null || $p->uses_count < $p->max_uses)
+                && ($p->pivot->use_limit === null || $p->pivot->uses_count < $p->pivot->use_limit)
             )
-            ->sortByDesc('discount_value')
+            ->sort(fn($a, $b) => $b->starts_at <=> $a->starts_at ?: $b->id <=> $a->id)
             ->first();
     }
 

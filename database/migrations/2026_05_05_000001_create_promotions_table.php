@@ -18,8 +18,6 @@ return new class extends Migration
             $table->dateTime('ends_at')->nullable();
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('min_quantity')->nullable()->comment('Quantidade mínima para ativar a promoção');
-            $table->unsignedInteger('max_uses')->nullable()->comment('Limite de usos totais da promoção');
-            $table->unsignedInteger('uses_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

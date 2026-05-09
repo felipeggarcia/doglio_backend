@@ -163,12 +163,11 @@ class InitialDataSeeder extends Seeder
                 'ends_at' => null,  // sem expiração
                 'is_active' => true,
                 'min_quantity' => null,
-                'max_uses' => null,
             ]
         );
 
-        // Vincula a promoção ao produto 1
-        $promo->products()->sync([$product1->id]);
+        // Vincula a promoção ao produto 1 com limite de 50 usos
+        $promo->products()->sync([$product1->id => ['use_limit' => 50]]);
 
         // Promoção expirada (para testar que NÃO aparece no index público)
         $promoExpired = Promotion::updateOrCreate(
@@ -181,11 +180,45 @@ class InitialDataSeeder extends Seeder
                 'ends_at' => now()->subDays(150),   // expirou há 150 dias
                 'is_active' => true,
                 'min_quantity' => null,
-                'max_uses' => null,
             ]
         );
 
-        $promoExpired->products()->sync([$product2->id]);
+        $promoExpired->products()->sync([$product2->id => ['use_limit' => null]]);
+
+        // Promoção com múltiplos produtos — ativa, sem expiração
+        $promoMulti = Promotion::updateOrCreate(
+            ['name' => 'Kit Pet Completo'],
+            [
+                'description' => 'Desconto de R$ 20,00 na Ração Super Premium e na Cama Pet Ortopédica.',
+                'type' => 'fixed',
+                'discount_value' => 20.00,
+                'starts_at' => now()->subDays(3),
+                'ends_at' => now()->addDays(30),
+                'is_active' => false,
+                'min_quantity' => null,
+            ]
+        );
+        $promoMulti->products()->sync([
+            $product1->id => ['use_limit' => 30],
+            $product3->id => ['use_limit' => 20],
+        ]);
+
+        // Promoção desativada (is_active = false) — não aparece no index público
+        $promoInactive = Promotion::updateOrCreate(
+            ['name' => 'Desconto Coleira VIP'],
+            [
+                'description' => 'Promoção suspensa temporariamente. 25% de desconto na Coleira Anti-pulgas.',
+                'type' => 'percentage',
+                'discount_value' => 25.00,
+                'starts_at' => now()->subDays(10),
+                'ends_at' => now()->addDays(20),
+                'is_active' => false,
+                'min_quantity' => null,
+            ]
+        );
+        $promoInactive->products()->sync([
+            $product2->id => ['use_limit' => null],
+        ]);
 
         // 9. Endereços do Cliente Teste
         $client = User::where('email', 'client@doglio.com')->first();

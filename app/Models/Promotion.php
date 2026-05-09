@@ -22,8 +22,6 @@ class Promotion extends Model
         'ends_at',
         'is_active',
         'min_quantity',
-        'max_uses',
-        'uses_count',
     ];
 
     protected $casts = [
@@ -32,13 +30,11 @@ class Promotion extends Model
         'ends_at' => 'datetime',
         'is_active' => 'boolean',
         'min_quantity' => 'integer',
-        'max_uses' => 'integer',
-        'uses_count' => 'integer',
     ];
 
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class);
+        return $this->belongsToMany(Product::class)->withPivot('use_limit', 'uses_count');
     }
 
     public function cartItems(): HasMany
@@ -62,10 +58,6 @@ class Promotion extends Model
         }
 
         if ($this->ends_at && $this->ends_at <= $now) {
-            return false;
-        }
-
-        if ($this->max_uses !== null && $this->uses_count >= $this->max_uses) {
             return false;
         }
 

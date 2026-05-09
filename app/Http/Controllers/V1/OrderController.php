@@ -279,9 +279,12 @@ class OrderController extends Controller
                     'unit_price' => $item->unit_price,
                 ]);
 
-                // Incrementa uso da promoção (se o item teve desconto de promoção)
+                // Incrementa uso da promoção por produto (limite é por produto, não global)
                 if ($item->promotion_id) {
-                    Promotion::where('id', $item->promotion_id)->increment('uses_count');
+                    DB::table('product_promotion')
+                        ->where('promotion_id', $item->promotion_id)
+                        ->where('product_id', $item->product_id)
+                        ->increment('uses_count');
                 }
             }
 

@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('product_promotion', function (Blueprint $table) {
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('promotion_id')->constrained()->onDelete('cascade');
+            $table->unsignedInteger('use_limit')->nullable()->comment('Limite de usos deste produto nesta promoção (null = ilimitado).');
+            $table->unsignedInteger('uses_count')->default(0)->comment('Contagem de usos deste produto nesta promoção.');
             $table->primary(['product_id', 'promotion_id']);
         });
     }

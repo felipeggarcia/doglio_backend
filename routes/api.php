@@ -41,10 +41,6 @@ Route::prefix('v1')->group(function () {
         // Categorias (Leitura pública)
         Route::get('/categories', [CategoryController::class, 'index']);//ok
         Route::get('/categories/{category}', [CategoryController::class, 'show']);//ok
-
-        // Promoções (Leitura pública — somente ativas)
-        Route::get('/promotions', [PromotionController::class, 'index']);//ok
-        Route::get('/promotions/{promotion}', [PromotionController::class, 'show']);//ok
     });
 
     // ==========================================
@@ -92,11 +88,13 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('admin')->prefix('admin')->group(function () {
             // Promoções (CRUD admin)
-            Route::post('/promotions', [PromotionController::class, 'store']);
-            Route::put('/promotions/{promotion}', [PromotionController::class, 'update']);
-            Route::delete('/promotions/{promotion}', [PromotionController::class, 'destroy']);
-            Route::post('/promotions/{promotion}/products', [PromotionController::class, 'attachProducts']);
-            Route::delete('/promotions/{promotion}/products', [PromotionController::class, 'detachProducts']);
+            Route::get('/promotions', [PromotionController::class, 'adminIndex']);//ok
+            Route::get('/promotions/{promotion}', [PromotionController::class, 'adminShow']);//ok
+            Route::post('/promotions', [PromotionController::class, 'store']);//ok
+            Route::put('/promotions/{promotion}', [PromotionController::class, 'update']);//ok
+            Route::delete('/promotions/{promotion}', [PromotionController::class, 'destroy']);//ok
+            Route::post('/promotions/{promotion}/products', [PromotionController::class, 'attachProducts']);//ok
+            Route::delete('/promotions/{promotion}/products', [PromotionController::class, 'detachProducts']);//ok
 
             // Produtos
             Route::get('/products', [ProductController::class, 'adminIndex']);//ok
@@ -118,11 +116,11 @@ Route::prefix('v1')->group(function () {
             Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
             // Usuários
-            Route::get('/users', [UserController::class, 'index']);
-            Route::post('/users', [UserController::class, 'store']);
-            Route::get('/users/{user}', [UserController::class, 'show']);
-            Route::put('/users/{user}', [UserController::class, 'update']);
-            Route::delete('/users/{user}', [UserController::class, 'destroy']);
+            Route::get('/users', [UserController::class, 'index']);//ok
+            Route::post('/users', [UserController::class, 'store']);//ok
+            Route::get('/users/{user}', [UserController::class, 'show']);//ok
+            Route::put('/users/{user}', [UserController::class, 'update']);//ok
+            Route::delete('/users/{user}', [UserController::class, 'destroy']);//ok
         });
     });
 });

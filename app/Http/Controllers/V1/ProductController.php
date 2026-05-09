@@ -18,8 +18,23 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['categories', 'images', 'primaryImage'])
+        $query = Product::with(['categories', 'images', 'primaryImage', 'promotions'])
             ->where('is_active', true);
+
+        // Filtro por produtos em promoção ativa
+        if ($request->boolean('on_promotion')) {
+            $query->whereHas('promotions', function ($q) {
+                $q->where('is_active', true)
+                  ->where('starts_at', '<=', now())
+                  ->where(function ($inner) {
+                      $inner->whereNull('ends_at')->orWhere('ends_at', '>', now());
+                  })
+                  ->where(function ($inner) {
+                      $inner->whereNull('product_promotion.use_limit')
+                            ->orWhereColumn('product_promotion.uses_count', '<', 'product_promotion.use_limit');
+                  });
+            });
+        }
 
         // Filtro por categoria
         if ($request->has('category_id')) {
@@ -110,6 +125,11 @@ class ProductController extends Controller
                 $query->orderByRaw('CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END')
                       ->orderBy($sortBy, $sortOrder);
             }
+        } elseif ($request->boolean('on_promotion')) {
+            // Em promoção: destacados primeiro, depois alfabético, sem estoque por último
+            $query->orderByRaw('CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END')
+                  ->orderBy('is_highlighted', 'desc')
+                  ->orderBy('name', 'asc');
         } else {
             // Ordenação padrão: destacados primeiro, depois alfabético, sem estoque por último
             $query->orderByRaw('CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END')
