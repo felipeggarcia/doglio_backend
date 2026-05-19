@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Support\ApiMessages;
+use App\Rules\ValidCpfCnpj;
 
 class AuthController extends Controller
 {
@@ -18,22 +19,31 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        // Normaliza CPF/CNPJ antes da validação para a regra unique comparar só dígitos
+        if ($request->filled('cpf_cnpj')) {
+            $request->merge(['cpf_cnpj' => preg_replace('/\D/', '', $request->cpf_cnpj)]);
+        }
+
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'city' => 'nullable|string|max:255',
-            'state' => 'nullable|string|max:2',
+            'name'       => 'required|string|max:255',
+            'email'      => 'required|string|email|max:255|unique:users',
+            'password'   => 'required|string|min:8|confirmed',
+            'city'       => 'nullable|string|max:255',
+            'state'      => 'nullable|string|max:2',
+            'cpf_cnpj'   => ['nullable', 'string', 'unique:users,cpf_cnpj', new ValidCpfCnpj()],
+            'birth_date' => 'nullable|date|before:today',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'customer', // Default role
-            'city' => $request->city,
-            'state' => $request->state,
-            'is_active' => true,
+            'name'       => $request->name,
+            'email'      => $request->email,
+            'password'   => Hash::make($request->password),
+            'role'       => 'customer',
+            'city'       => $request->city,
+            'state'      => $request->state,
+            'cpf_cnpj'   => $request->cpf_cnpj, // já normalizado acima
+            'birth_date' => $request->birth_date,
+            'is_active'  => true,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -42,8 +52,8 @@ class AuthController extends Controller
             'success' => true,
             'message' => ApiMessages::AUTH_REGISTERED,
             'data' => [
-                'user' => new UserResource($user),
-                'token' => $token,
+                'user'       => (new UserResource($user))->withSensitive(),
+                'token'      => $token,
                 'token_type' => 'Bearer'
             ]
         ], 201);
@@ -100,8 +110,8 @@ class AuthController extends Controller
             'success' => true,
             'message' => ApiMessages::AUTH_LOGIN,
             'data' => [
-                'user' => new UserResource($user),
-                'token' => $token,
+                'user'       => (new UserResource($user))->withSensitive(),
+                'token'      => $token,
                 'token_type' => 'Bearer'
             ]
         ]);

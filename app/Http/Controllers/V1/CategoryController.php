@@ -48,6 +48,8 @@ class CategoryController extends Controller
      */
     public function show(Request $request, Category $category)
     {
+        abort_if(!$category->is_active, 404);
+
         $category->loadCount('products');
 
         $products = $category->products()

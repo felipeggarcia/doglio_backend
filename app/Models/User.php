@@ -28,6 +28,8 @@ class User extends Authenticatable
         'role',
         'city',
         'state',
+        'cpf_cnpj',
+        'birth_date',
         'last_login',
         'is_active',
     ];
@@ -51,9 +53,10 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'last_login' => 'datetime',
-            'is_active' => 'boolean',
+            'password'         => 'hashed',
+            'last_login'       => 'datetime',
+            'birth_date'       => 'date',
+            'is_active'        => 'boolean',
         ];
     }
 
@@ -80,5 +83,30 @@ class User extends Authenticatable
     public function pushTokens(): HasMany
     {
         return $this->hasMany(PushToken::class);
+    }
+
+    /**
+     * CPF (11 dígitos) ou CNPJ (14 dígitos) formatado para exibição.
+     * Armazenado no banco apenas com dígitos.
+     */
+    public function getFormattedCpfCnpjAttribute(): ?string
+    {
+        $value = $this->cpf_cnpj;
+
+        if (!$value) {
+            return null;
+        }
+
+        if (strlen($value) === 11) {
+            // 123.456.789-01
+            return substr($value, 0, 3) . '.' . substr($value, 3, 3) . '.' . substr($value, 6, 3) . '-' . substr($value, 9, 2);
+        }
+
+        if (strlen($value) === 14) {
+            // 12.345.678/0001-95
+            return substr($value, 0, 2) . '.' . substr($value, 2, 3) . '.' . substr($value, 5, 3) . '/' . substr($value, 8, 4) . '-' . substr($value, 12, 2);
+        }
+
+        return $value;
     }
 }
