@@ -25,7 +25,7 @@ class AuthTest extends TestCase
             'email'                 => 'test@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'city'                  => 'SÃ£o Paulo',
+            'city'                  => 'São Paulo',
             'state'                 => 'SP',
         ]);
 
@@ -51,7 +51,7 @@ class AuthTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email'     => 'test@example.com',
             'role'      => 'customer',
-            'city'      => 'SÃ£o Paulo',
+            'city'      => 'São Paulo',
             'state'     => 'SP',
             'is_active' => true,
         ]);
@@ -333,7 +333,7 @@ class AuthTest extends TestCase
             'email'                 => 'cpf@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'cpf_cnpj'              => '529.982.247-25', // CPF com formataÃ§Ã£o
+            'cpf_cnpj'              => '529.982.247-25', // CPF com formatação
         ]);
 
         $response->assertStatus(201)
@@ -341,7 +341,7 @@ class AuthTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email'    => 'cpf@example.com',
-            'cpf_cnpj' => '52998224725', // Salvo apenas dÃ­gitos
+            'cpf_cnpj' => '52998224725', // Salvo apenas dígitos
         ]);
     }
 
@@ -353,7 +353,7 @@ class AuthTest extends TestCase
             'email'                 => 'cnpj@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'cpf_cnpj'              => '11.222.333/0001-81', // CNPJ com formataÃ§Ã£o
+            'cpf_cnpj'              => '11.222.333/0001-81', // CNPJ com formatação
         ]);
 
         $response->assertStatus(201)
@@ -361,7 +361,7 @@ class AuthTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email'    => 'cnpj@example.com',
-            'cpf_cnpj' => '11222333000181', // Salvo apenas dÃ­gitos
+            'cpf_cnpj' => '11222333000181', // Salvo apenas dígitos
         ]);
     }
 
@@ -373,7 +373,7 @@ class AuthTest extends TestCase
             'email'                 => 'bad@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'cpf_cnpj'              => '123.456.789-00', // DÃ­gitos verificadores errados
+            'cpf_cnpj'              => '123.456.789-00', // Dígitos verificadores errados
         ])
             ->assertStatus(422)
             ->assertJsonPath('error.details.cpf_cnpj', fn ($v) => !empty($v));
@@ -424,16 +424,16 @@ class AuthTest extends TestCase
     #[Test]
     public function cpf_cnpj_is_not_visible_to_other_authenticated_users(): void
     {
-        // A UserResource nÃ£o expÃµe cpf_cnpj de um usuÃ¡rio para outro usuÃ¡rio comum.
+        // A UserResource não expõe cpf_cnpj de um usuário para outro usuário comum.
         // Testamos indiretamente: ao listar via admin, o campo existe;
-        // aqui garantimos que o campo nÃ£o aparece em contextos nÃ£o-owner/nÃ£o-admin.
+        // aqui garantimos que o campo não aparece em contextos não-owner/não-admin.
         $owner = User::factory()->create(['cpf_cnpj' => '52998224725']);
         $other = User::factory()->create();
 
         // Simula Resource renderizado sem contexto de owner/admin
         $resource = new \App\Http\Resources\UserResource($owner);
         $request  = \Illuminate\Http\Request::create('/api/v1/user');
-        $request->setUserResolver(fn () => $other); // outro usuÃ¡rio autenticado
+        $request->setUserResolver(fn () => $other); // outro usuário autenticado
 
         $data = $resource->toArray($request);
 
@@ -441,7 +441,7 @@ class AuthTest extends TestCase
     }
 
     // =========================================================================
-    // SeguranÃ§a / comportamento crÃ­tico
+    // Segurança / comportamento crítico
     // =========================================================================
 
     #[Test]
@@ -538,9 +538,54 @@ class AuthTest extends TestCase
             'email'                 => 'badcnpj@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'cpf_cnpj'              => '11.222.333/0001-00', // dÃ­gitos verificadores errados
+            'cpf_cnpj'              => '11.222.333/0001-00',
         ])
             ->assertStatus(422)
             ->assertJsonPath('error.details.cpf_cnpj', fn ($v) => !empty($v));
+    }
+
+    #[Test]
+    public function register_accepts_cpf_without_formatting(): void
+    {
+        $this->postJson('/api/v1/register', [
+            'name'                  => 'Raw CPF User',
+            'email'                 => 'rawcpf@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+            'cpf_cnpj'              => '52998224725',
+        ])
+            ->assertStatus(201)
+            ->assertJsonPath('data.user.cpf_cnpj', '529.982.247-25');
+
+        $this->assertDatabaseHas('users', [
+            'email'    => 'rawcpf@example.com',
+            'cpf_cnpj' => '52998224725',
+        ]);
+    }
+
+    #[Test]
+    public function register_fails_with_cnpj_all_same_digits(): void
+    {
+        $this->postJson('/api/v1/register', [
+            'name'                  => 'Same CNPJ',
+            'email'                 => 'samecnpj@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+            'cpf_cnpj'              => '11.111.111/1111-11',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('error.details.cpf_cnpj', fn ($v) => !empty($v));
+    }
+
+    #[Test]
+    public function user_profile_shows_birth_date_to_owner(): void
+    {
+        $user  = User::factory()->create(['birth_date' => '1990-06-15']);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $this->withToken($token)
+            ->getJson('/api/v1/user')
+            ->assertStatus(200)
+            ->assertJsonPath('data.birth_date', '1990-06-15');
     }
 }
