@@ -62,9 +62,9 @@ class OrderController extends Controller
         }
 
         if ($request->filled('user_id')) {
-            $decoded = Hashids::decode($request->user_id);
-            if (!empty($decoded)) {
-                $query->where('user_id', $decoded[0]);
+            $userIds = $this->decodeHashidList($request->input('user_id'));
+            if (!empty($userIds)) {
+                $query->whereIn('user_id', $userIds);
             }
         }
 
@@ -78,6 +78,13 @@ class OrderController extends Controller
 
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('payment_method_id')) {
+            $methodIds = $this->decodeHashidList($request->input('payment_method_id'));
+            if (!empty($methodIds)) {
+                $query->whereHas('payment', fn ($q) => $q->whereIn('payment_method_id', $methodIds));
+            }
         }
 
         $orders = $query->orderBy('created_at', 'desc')
@@ -329,5 +336,26 @@ class OrderController extends Controller
             'message' => ApiMessages::ORDER_CREATED,
             'data' => new OrderResource($order),
         ], 201);
+    }
+
+    /**
+     * Decodifica uma lista de hashids separados por vírgula ou array.
+     * Retorna array de IDs inteiros válidos.
+     */
+    private function decodeHashidList(mixed $value): array
+    {
+        $hashes = is_array($value)
+            ? $value
+            : array_filter(array_map('trim', explode(',', $value)));
+
+        $ids = [];
+        foreach ($hashes as $hash) {
+            $decoded = Hashids::decode($hash);
+            if (!empty($decoded)) {
+                $ids[] = $decoded[0];
+            }
+        }
+
+        return $ids;
     }
 }

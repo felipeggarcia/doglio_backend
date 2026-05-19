@@ -105,15 +105,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/products/{product}/stock', [StockMovementController::class, 'store']);//ok
 
             // Pedidos
-            Route::get('/orders', [OrderController::class, 'adminIndex']);
-            Route::get('/orders/{order}', [OrderController::class, 'adminShow']);
-            Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);
+            Route::get('/orders', [OrderController::class, 'adminIndex']);//ok
+            Route::get('/orders/{order}', [OrderController::class, 'adminShow']);//ok
+            Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);//ok
 
             // Categorias
-            Route::get('/categories', [CategoryController::class, 'adminIndex']);
-            Route::post('/categories', [CategoryController::class, 'store']);
-            Route::put('/categories/{category}', [CategoryController::class, 'update']);
-            Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+            Route::get('/categories', [CategoryController::class, 'adminIndex']);//ok
+            Route::post('/categories', [CategoryController::class, 'store']);//ok       
+            Route::put('/categories/{category}', [CategoryController::class, 'update']);//ok
+            Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);//ok
 
             // Usuários
             Route::get('/users', [UserController::class, 'index']);//ok

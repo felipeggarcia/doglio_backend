@@ -372,5 +372,89 @@ class InitialDataSeeder extends Seeder
             'notes'          => null,
             'created_at'     => now()->subDays(30),
         ]);
+
+        // Pedido 2 — pending (aguardando confirmação admin)
+        $pendingOrder = Order::create([
+            'user_id'           => $client->id,
+            'address_id'        => null,
+            'status'            => 'pending',
+            'total_amount'      => 91.80, // 2x Coleira R$45,90
+            'delivery_type'     => 'pickup',
+            'shipping_street'   => null,
+            'shipping_number'   => null,
+            'shipping_complement' => null,
+            'shipping_city'     => null,
+            'shipping_state'    => null,
+            'shipping_zip'      => null,
+            'created_at'        => now()->subHours(2),
+            'updated_at'        => now()->subHours(2),
+        ]);
+
+        OrderItem::create([
+            'order_id'   => $pendingOrder->id,
+            'product_id' => $product2->id,
+            'quantity'   => 2,
+            'unit_price' => 45.90,
+        ]);
+
+        OrderStatusHistory::create([
+            'order_id'   => $pendingOrder->id,
+            'status'     => 'pending',
+            'notes'      => null,
+            'created_at' => now()->subHours(2),
+        ]);
+
+        Payment::create([
+            'order_id'          => $pendingOrder->id,
+            'payment_method_id' => $pixMethod->id,
+            'status'            => 'pending',
+            'amount'            => 91.80,
+            'paid_at'           => null,
+        ]);
+
+        // Pedido 3 — cancelled (com estorno de estoque registrado)
+        $cancelledOrder = Order::create([
+            'user_id'           => $client->id,
+            'address_id'        => $primaryAddress->id,
+            'status'            => 'cancelled',
+            'total_amount'      => 189.90,
+            'delivery_type'     => 'delivery',
+            'shipping_street'   => $primaryAddress->street,
+            'shipping_number'   => $primaryAddress->number,
+            'shipping_complement' => $primaryAddress->complement,
+            'shipping_city'     => $primaryAddress->city,
+            'shipping_state'    => $primaryAddress->state,
+            'shipping_zip'      => $primaryAddress->zip,
+            'created_at'        => now()->subDays(5),
+            'updated_at'        => now()->subDays(4),
+        ]);
+
+        OrderItem::create([
+            'order_id'   => $cancelledOrder->id,
+            'product_id' => $product3->id,
+            'quantity'   => 1,
+            'unit_price' => 189.90,
+        ]);
+
+        foreach ([
+            ['status' => 'pending',    'created_at' => now()->subDays(5)],
+            ['status' => 'confirmed',  'created_at' => now()->subDays(5)->addHours(1)],
+            ['status' => 'cancelled',  'created_at' => now()->subDays(4), 'notes' => 'Cliente solicitou cancelamento.'],
+        ] as $entry) {
+            OrderStatusHistory::create([
+                'order_id'   => $cancelledOrder->id,
+                'status'     => $entry['status'],
+                'notes'      => $entry['notes'] ?? null,
+                'created_at' => $entry['created_at'],
+            ]);
+        }
+
+        Payment::create([
+            'order_id'          => $cancelledOrder->id,
+            'payment_method_id' => $pixMethod->id,
+            'status'            => 'refunded',
+            'amount'            => 189.90,
+            'paid_at'           => now()->subDays(5)->addHours(1),
+        ]);
     }
 }

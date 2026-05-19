@@ -134,6 +134,10 @@ class CategoryController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
+        $query->orderByDesc('is_active')
+              ->orderByDesc('is_highlighted')
+              ->orderBy('name');
+
         return CategoryResource::collection($query->get());
     }
 
