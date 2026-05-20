@@ -36,8 +36,8 @@ class UserAddressController extends Controller
             'number' => 'required|string|max:20',
             'complement' => 'nullable|string|max:100',
             'city' => 'required|string|max:255',
-            'state' => 'required|string|size:2',
-            'zip' => 'required|string|size:8',
+            'state' => 'required|alpha|size:2',
+            'zip'   => 'required|digits:8',
             'is_primary' => 'boolean',
         ]);
 
@@ -81,8 +81,8 @@ class UserAddressController extends Controller
             'number' => 'sometimes|string|max:20',
             'complement' => 'nullable|string|max:100',
             'city' => 'sometimes|string|max:255',
-            'state' => 'sometimes|string|size:2',
-            'zip' => 'sometimes|string|size:8',
+            'state' => 'sometimes|alpha|size:2',
+            'zip'   => 'sometimes|digits:8',
         ]);
 
         $data = $request->only(['label', 'street', 'number', 'complement', 'city', 'zip']);
@@ -128,6 +128,7 @@ class UserAddressController extends Controller
         UserAddress::where('user_id', $request->user()->id)
             ->update(['is_primary' => false]);
 
+        $address->refresh();
         $address->update(['is_primary' => true]);
 
         return response()->json([

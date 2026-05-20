@@ -147,7 +147,7 @@ class ProductController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        $query = Product::with(['categories', 'images', 'primaryImage', 'activePromotion']);
+        $query = Product::with(['categories', 'images', 'primaryImage', 'promotions']);
 
         // Filtro por ativo/inativo
         if ($request->has('is_active')) {
