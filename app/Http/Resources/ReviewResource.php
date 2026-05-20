@@ -17,7 +17,7 @@ class ReviewResource extends JsonResource
                 'id' => $this->user->hashid ?? null,
                 'name' => $this->whenLoaded('user', fn() => $this->user->name),
             ],
-            'created_at' => $this->created_at->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

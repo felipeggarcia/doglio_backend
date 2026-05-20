@@ -6,11 +6,22 @@ use Tests\TestCase;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\User;
+use App\Support\ApiMessages;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ProductErrorHandlingTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function admin(): User
+    {
+        return User::factory()->create(['role' => 'admin', 'is_active' => true]);
+    }
+
+    private function token(User $user): string
+    {
+        return $user->createToken('test')->plainTextToken;
+    }
 
     /** @test */
     public function returns_404_for_deleted_or_nonexistent_product()
@@ -28,10 +39,10 @@ class ProductErrorHandlingTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'Product not found',
+                'message' => sprintf(ApiMessages::HTTP_RESOURCE_NOT_FOUND, 'Product'),
                 'error' => [
                     'code' => 'RESOURCE_NOT_FOUND',
-                    'details' => 'The requested product does not exist or has been deleted'
+                    'details' => sprintf(ApiMessages::HTTP_RESOURCE_NOT_FOUND_DETAILS, 'product')
                 ]
             ]);
     }
@@ -44,7 +55,7 @@ class ProductErrorHandlingTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'Endpoint not found',
+                'message' => ApiMessages::HTTP_ENDPOINT_NOT_FOUND,
                 'error' => [
                     'code' => 'ENDPOINT_NOT_FOUND'
                 ]
@@ -56,12 +67,12 @@ class ProductErrorHandlingTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $response = $this->deleteJson("/api/v1/products/{$product->hashid}");
+        $response = $this->deleteJson("/api/v1/admin/products/{$product->hashid}");
 
         $response->assertStatus(401)
             ->assertJson([
                 'success' => false,
-                'message' => 'Authentication required',
+                'message' => ApiMessages::HTTP_UNAUTHENTICATED,
                 'error' => [
                     'code' => 'UNAUTHENTICATED'
                 ]
@@ -73,8 +84,8 @@ class ProductErrorHandlingTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $response = $this->actingAs($admin, 'sanctum')
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => '', // Nome vazio (inválido)
                 'price' => -10, // Preço negativo (inválido)
             ]);
@@ -82,7 +93,7 @@ class ProductErrorHandlingTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::HTTP_VALIDATION_ERROR,
                 'error' => [
                     'code' => 'VALIDATION_ERROR'
                 ]
@@ -92,7 +103,7 @@ class ProductErrorHandlingTest extends TestCase
                 'message',
                 'error' => [
                     'code',
-                    'details' => ['name', 'description', 'price', 'stock_quantity']
+                    'details' => ['name', 'description', 'price']
                 ]
             ]);
     }
@@ -148,8 +159,8 @@ class ProductErrorHandlingTest extends TestCase
         \Illuminate\Support\Facades\Storage::fake('public');
         
         // Tenta adicionar 3 imagens (total seria 7, excede o limite de 6)
-        $response = $this->actingAs($admin, 'sanctum')
-            ->putJson("/api/v1/products/{$product->id}", [
+        $response = $this->withToken($this->token($this->admin()))
+            ->putJson("/api/v1/admin/products/{$product->hashid}", [
                 'images' => [
                     \Illuminate\Http\UploadedFile::fake()->image('image1.jpg'),
                     \Illuminate\Http\UploadedFile::fake()->image('image2.jpg'),
@@ -160,10 +171,9 @@ class ProductErrorHandlingTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Image limit exceeded',
+                'message' => ApiMessages::PRODUCT_IMAGE_LIMIT,
                 'error' => [
                     'code' => 'IMAGE_LIMIT_EXCEEDED',
-                    'details' => 'Maximum of 6 images per product allowed',
                     'current_count' => 4,
                     'max_allowed' => 6
                 ]

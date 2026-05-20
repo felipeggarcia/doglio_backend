@@ -34,7 +34,7 @@ class ProductResource extends JsonResource
                 'discount_value' => (float) $promo->discount_value,
             ] : null,
             'stock_quantity' => $this->when(
-                $request->user()?->role === 'admin',
+                (\Illuminate\Support\Facades\Auth::guard('sanctum')->user()?->role ?? $request->user()?->role) === 'admin',
                 (int) $this->stock_quantity
             ),
             'in_stock' => $this->stock_quantity > 0,

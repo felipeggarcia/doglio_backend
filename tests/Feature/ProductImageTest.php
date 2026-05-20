@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\ApiMessages;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -20,19 +21,24 @@ class ProductImageTest extends TestCase
         Storage::fake('public');
     }
 
-    protected function createAdmin()
+    private function admin(): User
     {
-        return User::factory()->create(['role' => 'admin']);
+        return User::factory()->create(['role' => 'admin', 'is_active' => true]);
+    }
+
+    private function token(User $user): string
+    {
+        return $user->createToken('test')->plainTextToken;
     }
 
     /** @test */
     public function admin_can_create_product_with_single_image()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $image = UploadedFile::fake()->image('product.jpg');
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -54,15 +60,15 @@ class ProductImageTest extends TestCase
     /** @test */
     public function admin_can_create_product_with_multiple_images()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $images = [
             UploadedFile::fake()->image('product1.jpg'),
             UploadedFile::fake()->image('product2.jpg'),
             UploadedFile::fake()->image('product3.jpg'),
         ];
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -87,15 +93,15 @@ class ProductImageTest extends TestCase
     /** @test */
     public function admin_can_upload_up_to_six_images()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $images = [];
         
         for ($i = 0; $i < 6; $i++) {
             $images[] = UploadedFile::fake()->image("product{$i}.jpg");
         }
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -110,15 +116,15 @@ class ProductImageTest extends TestCase
     /** @test */
     public function cannot_upload_more_than_six_images_on_create()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $images = [];
         
         for ($i = 0; $i < 7; $i++) {
             $images[] = UploadedFile::fake()->image("product{$i}.jpg");
         }
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -129,7 +135,7 @@ class ProductImageTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::HTTP_VALIDATION_ERROR,
                 'error' => [
                     'code' => 'VALIDATION_ERROR'
                 ]
@@ -142,7 +148,7 @@ class ProductImageTest extends TestCase
     /** @test */
     public function admin_can_add_images_to_existing_product()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $product = Product::factory()->create();
         
         // Cria com 2 imagens
@@ -164,8 +170,8 @@ class ProductImageTest extends TestCase
             UploadedFile::fake()->image('new2.jpg'),
         ];
 
-        $response = $this->actingAs($admin)
-            ->putJson("/api/v1/products/{$product->hashid}", [
+        $response = $this->withToken($this->token($admin))
+            ->putJson("/api/v1/admin/products/{$product->hashid}", [
                 'images' => $newImages,
             ]);
 
@@ -179,7 +185,7 @@ class ProductImageTest extends TestCase
     /** @test */
     public function cannot_exceed_six_images_when_updating()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $product = Product::factory()->create();
         
         // Cria com 5 imagens existentes
@@ -198,15 +204,15 @@ class ProductImageTest extends TestCase
             UploadedFile::fake()->image('new2.jpg'),
         ];
 
-        $response = $this->actingAs($admin)
-            ->putJson("/api/v1/products/{$product->hashid}", [
+        $response = $this->withToken($this->token($admin))
+            ->putJson("/api/v1/admin/products/{$product->hashid}", [
                 'images' => $newImages,
             ]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Image limit exceeded',
+                'message' => ApiMessages::PRODUCT_IMAGE_LIMIT,
                 'error' => [
                     'code' => 'IMAGE_LIMIT_EXCEEDED'
                 ]
@@ -217,7 +223,7 @@ class ProductImageTest extends TestCase
     public function admin_can_remove_images_from_product()
     {
         Storage::fake('public');
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $product = Product::factory()->create();
         
         $image1 = ProductImage::create([
@@ -238,8 +244,8 @@ class ProductImageTest extends TestCase
         Storage::disk('public')->put($image1->path, 'fake content');
         Storage::disk('public')->put($image2->path, 'fake content');
 
-        $response = $this->actingAs($admin)
-            ->putJson("/api/v1/products/{$product->hashid}", [
+        $response = $this->withToken($this->token($admin))
+            ->putJson("/api/v1/admin/products/{$product->hashid}", [
                 'remove_images' => [(string) $image1->hashid],
             ]);
 
@@ -259,7 +265,7 @@ class ProductImageTest extends TestCase
     public function admin_can_remove_and_add_images_in_same_request()
     {
         Storage::fake('public');
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $product = Product::factory()->create();
         
         $oldImage = ProductImage::create([
@@ -273,8 +279,8 @@ class ProductImageTest extends TestCase
 
         $newImage = UploadedFile::fake()->image('new.jpg');
 
-        $response = $this->actingAs($admin)
-            ->putJson("/api/v1/products/{$product->hashid}", [
+        $response = $this->withToken($this->token($admin))
+            ->putJson("/api/v1/admin/products/{$product->hashid}", [
                 'remove_images' => [(string) $oldImage->hashid],
                 'images' => [$newImage],
             ]);
@@ -288,15 +294,15 @@ class ProductImageTest extends TestCase
     /** @test */
     public function image_order_is_maintained_correctly()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $images = [
             UploadedFile::fake()->image('first.jpg'),
             UploadedFile::fake()->image('second.jpg'),
             UploadedFile::fake()->image('third.jpg'),
         ];
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -316,15 +322,15 @@ class ProductImageTest extends TestCase
     /** @test */
     public function only_first_image_is_marked_as_primary()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $images = [
             UploadedFile::fake()->image('img1.jpg'),
             UploadedFile::fake()->image('img2.jpg'),
             UploadedFile::fake()->image('img3.jpg'),
         ];
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -346,11 +352,11 @@ class ProductImageTest extends TestCase
     /** @test */
     public function images_are_included_in_product_response()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $image = UploadedFile::fake()->image('product.jpg');
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -372,7 +378,7 @@ class ProductImageTest extends TestCase
     /** @test */
     public function primary_image_is_included_separately_in_response()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $product = Product::factory()->create();
         
         ProductImage::create([
@@ -404,7 +410,7 @@ class ProductImageTest extends TestCase
     public function deleting_product_deletes_associated_images()
     {
         Storage::fake('public');
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $product = Product::factory()->create();
         
         $image = ProductImage::create([
@@ -416,8 +422,8 @@ class ProductImageTest extends TestCase
         
         Storage::disk('public')->put($image->path, 'fake content');
 
-        $response = $this->actingAs($admin)
-            ->deleteJson("/api/v1/products/{$product->hashid}");
+        $response = $this->withToken($this->token($admin))
+            ->deleteJson("/api/v1/admin/products/{$product->hashid}");
 
         $response->assertStatus(200);
         
@@ -433,11 +439,11 @@ class ProductImageTest extends TestCase
     /** @test */
     public function only_allowed_image_formats_are_accepted()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         $invalidFile = UploadedFile::fake()->create('document.pdf', 100);
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -448,7 +454,7 @@ class ProductImageTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::HTTP_VALIDATION_ERROR,
                 'error' => [
                     'code' => 'VALIDATION_ERROR'
                 ]
@@ -463,12 +469,12 @@ class ProductImageTest extends TestCase
     /** @test */
     public function image_size_must_not_exceed_limit()
     {
-        $admin = $this->createAdmin();
+        $admin = $this->admin();
         // Cria imagem maior que 2MB (2048KB)
         $largeImage = UploadedFile::fake()->image('large.jpg')->size(3000);
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/v1/products', [
+        $response = $this->withToken($this->token($admin))
+            ->postJson('/api/v1/admin/products', [
                 'name' => 'Produto Teste',
                 'description' => 'Descrição teste',
                 'price' => 99.99,
@@ -479,7 +485,7 @@ class ProductImageTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => ApiMessages::HTTP_VALIDATION_ERROR,
                 'error' => [
                     'code' => 'VALIDATION_ERROR'
                 ]

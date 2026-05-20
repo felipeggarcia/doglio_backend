@@ -40,12 +40,14 @@ class OrderStatusController extends Controller
                 $order->load('orderItems.product');
 
                 foreach ($order->orderItems as $item) {
+                    $stockBefore = (int) $item->product->stock_quantity;
                     $item->product->increment('stock_quantity', $item->quantity);
 
                     StockMovement::create([
                         'product_id'     => $item->product_id,
                         'type'           => 'in',
                         'quantity'       => $item->quantity,
+                        'stock_before'   => $stockBefore,
                         'reason'         => 'return',
                         'reference_type' => 'order',
                         'reference_id'   => $order->id,

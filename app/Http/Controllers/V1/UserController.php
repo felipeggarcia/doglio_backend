@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Models\User;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Rules\ValidCpfCnpj;
 use Illuminate\Http\Request;

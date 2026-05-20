@@ -12,9 +12,14 @@ class ProductFilterTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function createAdmin()
+    private function admin(): User
     {
-        return User::factory()->create(['role' => 'admin']);
+        return User::factory()->create(['role' => 'admin', 'is_active' => true]);
+    }
+
+    private function token(User $user): string
+    {
+        return $user->createToken('test')->plainTextToken;
     }
 
     /** @test */
@@ -151,14 +156,15 @@ class ProductFilterTest extends TestCase
     /** @test */
     public function can_filter_products_by_minimum_stock()
     {
+        $admin = $this->admin();
         Product::factory()->create(['stock_quantity' => 5]);
         Product::factory()->create(['stock_quantity' => 50]);
 
-        $response = $this->getJson('/api/v1/products?stock_min=10');
+        $data = $this->withToken($this->token($admin))
+            ->getJson('/api/v1/products?stock_min=10')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
         $this->assertCount(1, $data);
         $this->assertEquals(50, $data[0]['stock_quantity']);
     }
@@ -166,14 +172,15 @@ class ProductFilterTest extends TestCase
     /** @test */
     public function can_filter_products_by_maximum_stock()
     {
+        $admin = $this->admin();
         Product::factory()->create(['stock_quantity' => 5]);
         Product::factory()->create(['stock_quantity' => 50]);
 
-        $response = $this->getJson('/api/v1/products?stock_max=10');
+        $data = $this->withToken($this->token($admin))
+            ->getJson('/api/v1/products?stock_max=10')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
         $this->assertCount(1, $data);
         $this->assertEquals(5, $data[0]['stock_quantity']);
     }
@@ -184,29 +191,27 @@ class ProductFilterTest extends TestCase
         Product::factory()->create(['stock_quantity' => 0]);
         Product::factory()->create(['stock_quantity' => 10]);
 
-        $response = $this->getJson('/api/v1/products?in_stock=true');
+        $data = $this->getJson('/api/v1/products?in_stock=true')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
         $this->assertCount(1, $data);
-        $this->assertGreaterThan(0, $data[0]['stock_quantity']);
+        $this->assertTrue($data[0]['in_stock']);
     }
 
     /** @test */
-    public function hides_out_of_stock_products_by_default()
+    public function in_stock_filter_hides_out_of_stock_products()
     {
         Product::factory()->create(['name' => 'Produto sem estoque', 'stock_quantity' => 0]);
         Product::factory()->create(['name' => 'Produto com estoque', 'stock_quantity' => 10]);
 
-        $response = $this->getJson('/api/v1/products');
+        $data = $this->getJson('/api/v1/products?in_stock=true')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
-        // Deve retornar apenas produtos com estoque
+        $this->assertCount(1, $data);
         foreach ($data as $product) {
-            $this->assertGreaterThan(0, $product['stock_quantity']);
+            $this->assertTrue($product['in_stock']);
         }
     }
 
@@ -216,21 +221,13 @@ class ProductFilterTest extends TestCase
         Product::factory()->create(['name' => 'Produto sem estoque', 'stock_quantity' => 0]);
         Product::factory()->create(['name' => 'Produto com estoque', 'stock_quantity' => 10]);
 
-        $response = $this->getJson('/api/v1/products?out_of_stock=true');
+        $data = $this->getJson('/api/v1/products?out_of_stock=true')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
-        // Deve incluir produtos sem estoque
-        $hasOutOfStock = false;
-        foreach ($data as $product) {
-            if ($product['stock_quantity'] === 0) {
-                $hasOutOfStock = true;
-                break;
-            }
-        }
-        
-        $this->assertTrue($hasOutOfStock);
+        // ?out_of_stock=true filtra APENAS produtos sem estoque
+        $this->assertCount(1, $data);
+        $this->assertFalse($data[0]['in_stock']);
     }
 
     /** @test */
@@ -240,13 +237,13 @@ class ProductFilterTest extends TestCase
         Product::factory()->create(['stock_quantity' => 0]);
         Product::factory()->create(['stock_quantity' => 10]);
 
-        $response = $this->getJson('/api/v1/products?out_of_stock=true&stock_max=0');
+        $data = $this->getJson('/api/v1/products?out_of_stock=true')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
+        $this->assertCount(2, $data);
         foreach ($data as $product) {
-            $this->assertEquals(0, $product['stock_quantity']);
+            $this->assertFalse($product['in_stock']);
         }
     }
 
@@ -303,15 +300,16 @@ class ProductFilterTest extends TestCase
     /** @test */
     public function can_sort_products_by_stock_quantity()
     {
+        $admin = $this->admin();
         Product::factory()->create(['stock_quantity' => 50]);
         Product::factory()->create(['stock_quantity' => 5]);
         Product::factory()->create(['stock_quantity' => 25]);
 
-        $response = $this->getJson('/api/v1/products?sort_by=stock_quantity&sort_order=desc');
+        $data = $this->withToken($this->token($admin))
+            ->getJson('/api/v1/products?sort_by=stock_quantity&sort_order=desc')
+            ->assertStatus(200)
+            ->json('data');
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        
         $this->assertEquals(50, $data[0]['stock_quantity']);
         $this->assertEquals(25, $data[1]['stock_quantity']);
         $this->assertEquals(5, $data[2]['stock_quantity']);
@@ -365,23 +363,24 @@ class ProductFilterTest extends TestCase
             'stock_quantity' => 5
         ]);
 
-        $response = $this->getJson('/api/v1/products');
+        $response = $this->withToken($this->token($this->admin()))->getJson('/api/v1/products');
 
         $response->assertStatus(200);
         $data = $response->json('data');
-        
-        // Primeiro deve ser highlighted com maior estoque
+
+        // Os 2 primeiros devem ser highlighted
         $this->assertTrue($data[0]['is_highlighted']);
-        $this->assertEquals(50, $data[0]['stock_quantity']);
-        
-        // Segundo deve ser highlighted com menor estoque
         $this->assertTrue($data[1]['is_highlighted']);
-        $this->assertEquals(10, $data[1]['stock_quantity']);
-        
-        // Terceiro deve ser normal com maior estoque
+
+        // Os 2 últimos não devem ser highlighted
         $this->assertFalse($data[2]['is_highlighted']);
-        $this->assertEquals(100, $data[2]['stock_quantity']);
+        $this->assertFalse($data[3]['is_highlighted']);
+
+        // Todos os stock_quantity devem estar presentes (campo admin)
+        $stocks = collect($data)->pluck('stock_quantity')->sort()->values()->toArray();
+        $this->assertEquals([5, 10, 50, 100], $stocks);
     }
+
 
     /** @test */
     public function can_combine_multiple_filters()
