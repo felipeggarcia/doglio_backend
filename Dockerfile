@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     default-mysql-client
 
 # Instala as extensões do PHP para conectar no MySQL
-RUN docker-php-ext-install pdo_mysql mbstring zip
+RUN docker-php-ext-install pdo_mysql mbstring zip bcmath
 
 # Puxa o Composer oficial
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
