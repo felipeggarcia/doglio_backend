@@ -22,7 +22,7 @@ WORKDIR /app
 COPY . .
 
 # Instala as dependências do Laravel (ignorando as de teste/dev para ficar mais leve)
-RUN composer install --optimize-autoloader --no-dev
+RUN composer install --optimize-autoloader
 
 # Dá permissão total para as pastas que o Laravel precisa modificar
 RUN chmod -R 777 storage bootstrap/cache
