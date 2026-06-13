@@ -152,6 +152,16 @@ class InitialDataSeeder extends Seeder
             ['name' => 'PIX', 'is_active' => true]
         );
 
+        PaymentMethod::updateOrCreate(
+            ['type' => 'credit_card'],
+            ['name' => 'Cartão de Crédito', 'is_active' => true]
+        );
+
+        PaymentMethod::updateOrCreate(
+            ['type' => 'boleto'],
+            ['name' => 'Boleto Bancário', 'is_active' => true]
+        );
+
         // 8. Promoção — 10% de desconto na Ração Super Premium
         $promo = Promotion::updateOrCreate(
             ['name' => 'Lançamento Ração Premium'],
@@ -228,9 +238,10 @@ class InitialDataSeeder extends Seeder
             [
                 'label' => 'Casa',
                 'complement' => 'Apto 31',
+                'district' => 'Bela Vista',
                 'city' => 'São Paulo',
                 'state' => 'SP',
-                'zip' => '01310100',
+                'zip_code' => '01310100',
                 'is_primary' => true,
             ]
         );
@@ -240,9 +251,10 @@ class InitialDataSeeder extends Seeder
             [
                 'label' => 'Trabalho',
                 'complement' => 'Sala 504',
+                'district' => 'Bela Vista',
                 'city' => 'São Paulo',
                 'state' => 'SP',
-                'zip' => '01310900',
+                'zip_code' => '01310900',
                 'is_primary' => false,
             ]
         );
@@ -252,9 +264,10 @@ class InitialDataSeeder extends Seeder
             [
                 'label' => 'Casa da Mãe',
                 'complement' => null,
+                'district' => 'Centro',
                 'city' => 'Curitiba',
                 'state' => 'PR',
-                'zip' => '80020310',
+                'zip_code' => '80020310',
                 'is_primary' => false,
             ]
         );
@@ -272,9 +285,10 @@ class InitialDataSeeder extends Seeder
             'shipping_street'   => $primaryAddress->street,
             'shipping_number'   => $primaryAddress->number,
             'shipping_complement' => $primaryAddress->complement,
+            'shipping_district' => $primaryAddress->district,
             'shipping_city'     => $primaryAddress->city,
             'shipping_state'    => $primaryAddress->state,
-            'shipping_zip'      => $primaryAddress->zip,
+            'shipping_zip_code' => $primaryAddress->zip_code,
             'created_at'        => now()->subDays(30),
             'updated_at'        => now()->subDays(25),
         ]);
@@ -373,6 +387,16 @@ class InitialDataSeeder extends Seeder
             'created_at'     => now()->subDays(30),
         ]);
 
+        // 12. Clientes adicionais para testes (senha: password)
+        // 15 clientes ativos normais
+        User::factory()->count(15)->create();
+
+        // 3 clientes inativos (para testar filtro is_active=0)
+        User::factory()->count(3)->inactive()->create();
+
+        // 2 clientes sem email verificado
+        User::factory()->count(2)->unverified()->create();
+
         // Pedido 2 — pending (aguardando confirmação admin)
         $pendingOrder = Order::create([
             'user_id'           => $client->id,
@@ -383,9 +407,10 @@ class InitialDataSeeder extends Seeder
             'shipping_street'   => null,
             'shipping_number'   => null,
             'shipping_complement' => null,
+            'shipping_district' => null,
             'shipping_city'     => null,
             'shipping_state'    => null,
-            'shipping_zip'      => null,
+            'shipping_zip_code' => null,
             'created_at'        => now()->subHours(2),
             'updated_at'        => now()->subHours(2),
         ]);
@@ -422,9 +447,10 @@ class InitialDataSeeder extends Seeder
             'shipping_street'   => $primaryAddress->street,
             'shipping_number'   => $primaryAddress->number,
             'shipping_complement' => $primaryAddress->complement,
+            'shipping_district' => $primaryAddress->district,
             'shipping_city'     => $primaryAddress->city,
             'shipping_state'    => $primaryAddress->state,
-            'shipping_zip'      => $primaryAddress->zip,
+            'shipping_zip_code' => $primaryAddress->zip_code,
             'created_at'        => now()->subDays(5),
             'updated_at'        => now()->subDays(4),
         ]);
