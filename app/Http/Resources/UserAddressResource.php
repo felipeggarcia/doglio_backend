@@ -15,9 +15,10 @@ class UserAddressResource extends JsonResource
             'street' => $this->street,
             'number' => $this->number,
             'complement' => $this->complement,
+            'district' => $this->district,
             'city' => $this->city,
             'state' => $this->state,
-            'zip' => $this->zip,
+            'zip_code' => $this->zip_code,
             'is_primary' => (bool) $this->is_primary,
         ];
     }

@@ -35,9 +35,10 @@ class UserAddressController extends Controller
             'street' => 'required|string|max:255',
             'number' => 'required|string|max:20',
             'complement' => 'nullable|string|max:100',
+            'district'   => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'state' => 'required|alpha|size:2',
-            'zip'   => 'required|digits:8',
+            'zip_code'   => 'required|digits:8',
             'is_primary' => 'boolean',
         ]);
 
@@ -53,9 +54,10 @@ class UserAddressController extends Controller
             'street' => $request->street,
             'number' => $request->number,
             'complement' => $request->complement,
+            'district' => $request->district,
             'city' => $request->city,
             'state' => strtoupper($request->state),
-            'zip' => $request->zip,
+            'zip_code' => $request->zip_code,
             'is_primary' => $request->boolean('is_primary'),
         ]);
 
@@ -80,12 +82,13 @@ class UserAddressController extends Controller
             'street' => 'sometimes|string|max:255',
             'number' => 'sometimes|string|max:20',
             'complement' => 'nullable|string|max:100',
+            'district'   => 'sometimes|string|max:255',
             'city' => 'sometimes|string|max:255',
             'state' => 'sometimes|alpha|size:2',
-            'zip'   => 'sometimes|digits:8',
+            'zip_code'   => 'sometimes|digits:8',
         ]);
 
-        $data = $request->only(['label', 'street', 'number', 'complement', 'city', 'zip']);
+        $data = $request->only(['label', 'street', 'number', 'complement', 'district', 'city', 'zip_code']);
 
         if ($request->has('state')) {
             $data['state'] = strtoupper($request->state);

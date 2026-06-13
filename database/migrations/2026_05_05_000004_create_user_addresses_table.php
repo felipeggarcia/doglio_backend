@@ -15,9 +15,10 @@ return new class extends Migration
             $table->string('street');
             $table->string('number');
             $table->string('complement')->nullable();
+            $table->string('district');
             $table->string('city');
             $table->string('state', 2);
-            $table->string('zip', 8);
+            $table->string('zip_code', 8);
             $table->boolean('is_primary')->default(false);
             $table->timestamps();
             $table->softDeletes();

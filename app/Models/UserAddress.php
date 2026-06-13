@@ -18,9 +18,10 @@ class UserAddress extends Model
         'street',
         'number',
         'complement',
+        'district',
         'city',
         'state',
-        'zip',
+        'zip_code',
         'is_primary',
     ];
 

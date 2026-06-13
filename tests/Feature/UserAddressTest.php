@@ -23,9 +23,10 @@ class UserAddressTest extends TestCase
             'user_id'    => $user->id,
             'street'     => 'Rua das Flores',
             'number'     => '100',
+            'district'   => 'Boa Vista',
             'city'       => 'Recife',
             'state'      => 'PE',
-            'zip'        => '52000000',
+            'zip_code'   => '52000000',
             'is_primary' => false,
         ], $attrs));
     }
@@ -100,11 +101,12 @@ class UserAddressTest extends TestCase
 
         $this->withToken($this->token($user))
             ->postJson('/api/v1/addresses', [
-                'street' => 'Av. Boa Viagem',
-                'number' => '200',
-                'city'   => 'Recife',
-                'state'  => 'PE',
-                'zip'    => '51020001',
+                'street'   => 'Av. Boa Viagem',
+                'number'   => '200',
+                'district' => 'Boa Viagem',
+                'city'     => 'Recife',
+                'state'    => 'PE',
+                'zip_code' => '51020001',
             ])
             ->assertStatus(201)
             ->assertJson([
@@ -112,7 +114,7 @@ class UserAddressTest extends TestCase
                 'message' => ApiMessages::ADDRESS_CREATED,
             ])
             ->assertJsonStructure([
-                'data' => ['id', 'street', 'number', 'city', 'state', 'zip', 'is_primary'],
+                'data' => ['id', 'street', 'number', 'district', 'city', 'state', 'zip_code', 'is_primary'],
             ]);
 
         $this->assertDatabaseHas('user_addresses', [
@@ -126,11 +128,12 @@ class UserAddressTest extends TestCase
     public function store_requires_authentication(): void
     {
         $this->postJson('/api/v1/addresses', [
-            'street' => 'Rua X',
-            'number' => '1',
-            'city'   => 'SP',
-            'state'  => 'SP',
-            'zip'    => '01000000',
+            'street'   => 'Rua X',
+            'number'   => '1',
+            'district' => 'Centro',
+            'city'     => 'SP',
+            'state'    => 'SP',
+            'zip_code' => '01000000',
         ])->assertStatus(401);
     }
 
@@ -142,11 +145,12 @@ class UserAddressTest extends TestCase
         $this->withToken($this->token($user))
             ->postJson('/api/v1/addresses', [])
             ->assertStatus(422)
-            ->assertJsonPath('error.details.street', fn ($v) => !empty($v))
-            ->assertJsonPath('error.details.number', fn ($v) => !empty($v))
-            ->assertJsonPath('error.details.city',   fn ($v) => !empty($v))
-            ->assertJsonPath('error.details.state',  fn ($v) => !empty($v))
-            ->assertJsonPath('error.details.zip',    fn ($v) => !empty($v));
+            ->assertJsonPath('error.details.street',   fn ($v) => !empty($v))
+            ->assertJsonPath('error.details.number',   fn ($v) => !empty($v))
+            ->assertJsonPath('error.details.district', fn ($v) => !empty($v))
+            ->assertJsonPath('error.details.city',     fn ($v) => !empty($v))
+            ->assertJsonPath('error.details.state',    fn ($v) => !empty($v))
+            ->assertJsonPath('error.details.zip_code', fn ($v) => !empty($v));
     }
 
     #[Test]
@@ -160,7 +164,7 @@ class UserAddressTest extends TestCase
                 'number' => '1',
                 'city'   => 'Recife',
                 'state'  => 'PER', // 3 chars — inválido
-                'zip'    => '52000000',
+                'zip_code' => '52000000',
             ])
             ->assertStatus(422)
             ->assertJsonPath('error.details.state', fn ($v) => !empty($v));
@@ -177,10 +181,10 @@ class UserAddressTest extends TestCase
                 'number' => '1',
                 'city'   => 'Recife',
                 'state'  => 'PE',
-                'zip'    => '1234567', // 7 chars — inválido
+                'zip_code' => '1234567', // 7 chars — inválido
             ])
             ->assertStatus(422)
-            ->assertJsonPath('error.details.zip', fn ($v) => !empty($v));
+            ->assertJsonPath('error.details.zip_code', fn ($v) => !empty($v));
     }
 
     #[Test]
@@ -190,11 +194,12 @@ class UserAddressTest extends TestCase
 
         $this->withToken($this->token($user))
             ->postJson('/api/v1/addresses', [
-                'street' => 'Rua X',
-                'number' => '1',
-                'city'   => 'Recife',
-                'state'  => 'pe',
-                'zip'    => '52000000',
+                'street'   => 'Rua X',
+                'number'   => '1',
+                'district' => 'Centro',
+                'city'     => 'Recife',
+                'state'    => 'pe',
+                'zip_code' => '52000000',
             ])
             ->assertStatus(201)
             ->assertJsonPath('data.state', 'PE');
@@ -212,9 +217,10 @@ class UserAddressTest extends TestCase
             ->postJson('/api/v1/addresses', [
                 'street'     => 'Nova Rua',
                 'number'     => '50',
+                'district'   => 'Centro',
                 'city'       => 'Recife',
                 'state'      => 'PE',
-                'zip'        => '52000000',
+                'zip_code'   => '52000000',
                 'is_primary' => true,
             ])
             ->assertStatus(201)
@@ -237,9 +243,10 @@ class UserAddressTest extends TestCase
                 'street'     => 'Rua X',
                 'number'     => '1',
                 'complement' => 'Apto 302',
+                'district'   => 'Centro',
                 'city'       => 'Recife',
                 'state'      => 'PE',
-                'zip'        => '52000000',
+                'zip_code'   => '52000000',
             ])
             ->assertStatus(201)
             ->assertJsonPath('data.label', 'Casa')
@@ -512,9 +519,10 @@ class UserAddressTest extends TestCase
             ->postJson('/api/v1/addresses', [
                 'street'     => 'Nova Rua',
                 'number'     => '1',
+                'district'   => 'Centro',
                 'city'       => 'Recife',
                 'state'      => 'PE',
-                'zip'        => '52000000',
+                'zip_code'   => '52000000',
                 'is_primary' => false,
             ])
             ->assertStatus(201)
@@ -551,7 +559,7 @@ class UserAddressTest extends TestCase
                 'number' => '1',
                 'city'   => 'Recife',
                 'state'  => 'PE',
-                'zip'    => '52000000',
+                'zip_code' => '52000000',
             ])
             ->assertStatus(422)
             ->assertJsonPath('error.details.label', fn ($v) => !empty($v));
@@ -596,7 +604,7 @@ class UserAddressTest extends TestCase
                 'number' => '1',
                 'city'   => 'Recife',
                 'state'  => '12', // dígitos — deve falhar
-                'zip'    => '52000000',
+                'zip_code' => '52000000',
             ])
             ->assertStatus(422)
             ->assertJsonPath('error.details.state', fn ($v) => !empty($v));
@@ -605,7 +613,7 @@ class UserAddressTest extends TestCase
     #[Test]
     public function store_rejects_non_numeric_zip(): void
     {
-        // 'zip' deve conter exatamente 8 dígitos numéricos
+        // 'zip_code' deve conter exatamente 8 dígitos numéricos
         $user = User::factory()->create();
 
         $this->withToken($this->token($user))
@@ -614,10 +622,10 @@ class UserAddressTest extends TestCase
                 'number' => '1',
                 'city'   => 'Recife',
                 'state'  => 'PE',
-                'zip'    => 'ABCDEFGH', // letras com 8 chars — deve falhar
+                'zip_code' => 'ABCDEFGH', // letras com 8 chars — deve falhar
             ])
             ->assertStatus(422)
-            ->assertJsonPath('error.details.zip', fn ($v) => !empty($v));
+            ->assertJsonPath('error.details.zip_code', fn ($v) => !empty($v));
     }
 
     #[Test]
