@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Traits\UsesHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use HasFactory, SoftDeletes, UsesHashids;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -23,9 +22,10 @@ class Order extends Model
         'shipping_street',
         'shipping_number',
         'shipping_complement',
+        'shipping_district',
         'shipping_city',
         'shipping_state',
-        'shipping_zip',
+        'shipping_zip_code',
     ];
 
     protected $casts = [

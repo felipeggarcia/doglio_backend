@@ -9,17 +9,19 @@ class OrderResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->hashid,
+            'id' => $this->id,
+            'order_number' => str_pad($this->id, 5, '0', STR_PAD_LEFT),
             'status' => $this->status,
             'total_amount' => number_format($this->total_amount, 2, '.', ''),
             'delivery_type' => $this->delivery_type,
             'shipping_address' => $this->delivery_type === 'delivery' ? [
-                'street' => $this->shipping_street,
-                'number' => $this->shipping_number,
+                'street'     => $this->shipping_street,
+                'number'     => $this->shipping_number,
                 'complement' => $this->shipping_complement,
-                'city' => $this->shipping_city,
-                'state' => $this->shipping_state,
-                'zip' => $this->shipping_zip,
+                'district'   => $this->shipping_district,
+                'city'       => $this->shipping_city,
+                'state'      => $this->shipping_state,
+                'zip_code'   => $this->shipping_zip_code,
             ] : null,
             'customer' => $this->when(
                 $request->user()?->role === 'admin',

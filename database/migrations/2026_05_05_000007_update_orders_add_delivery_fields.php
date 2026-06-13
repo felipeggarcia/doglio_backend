@@ -24,9 +24,10 @@ return new class extends Migration
             $table->string('shipping_street')->nullable()->after('delivery_type');
             $table->string('shipping_number')->nullable()->after('shipping_street');
             $table->string('shipping_complement')->nullable()->after('shipping_number');
-            $table->string('shipping_city')->nullable()->after('shipping_complement');
+            $table->string('shipping_district')->nullable()->after('shipping_complement');
+            $table->string('shipping_city')->nullable()->after('shipping_district');
             $table->string('shipping_state', 2)->nullable()->after('shipping_city');
-            $table->string('shipping_zip', 8)->nullable()->after('shipping_state');
+            $table->string('shipping_zip_code', 8)->nullable()->after('shipping_state');
         });
     }
 
@@ -40,9 +41,10 @@ return new class extends Migration
                 'shipping_street',
                 'shipping_number',
                 'shipping_complement',
+                'shipping_district',
                 'shipping_city',
                 'shipping_state',
-                'shipping_zip',
+                'shipping_zip_code',
             ]);
             $table->text('pix_code')->nullable();
         });
