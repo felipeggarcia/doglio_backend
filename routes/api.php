@@ -15,6 +15,8 @@ use App\Http\Controllers\V1\ReviewController;
 use App\Http\Controllers\V1\FavoriteController;
 use App\Http\Controllers\V1\PushTokenController;
 use App\Http\Controllers\V1\StockMovementController;
+use App\Http\Controllers\V1\PaymentMethodController;
+use App\Http\Controllers\V1\OrderItemController;
 use App\Http\Resources\UserResource;
 // ==========================================
 // API V1
@@ -41,6 +43,9 @@ Route::prefix('v1')->group(function () {
         // Categorias (Leitura pública)
         Route::get('/categories', [CategoryController::class, 'index']);//ok
         Route::get('/categories/{category}', [CategoryController::class, 'show']);//ok
+
+        // Métodos de pagamento (Leitura pública)
+        Route::get('/payment_methods', [PaymentMethodController::class, 'index']);//ok
     });
 
     // ==========================================
@@ -108,6 +113,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/orders', [OrderController::class, 'adminIndex']);//ok
             Route::get('/orders/{order}', [OrderController::class, 'adminShow']);//ok
             Route::patch('/orders/{order}/status', [OrderStatusController::class, 'update']);//ok
+            Route::post('/orders/{order}/items', [OrderItemController::class, 'addItem']);//ok
+            Route::put('/orders/{order}/items/{item}', [OrderItemController::class, 'updateItem']);//ok
+            Route::delete('/orders/{order}/items/{item}', [OrderItemController::class, 'removeItem']);//ok
 
             // Categorias
             Route::get('/categories', [CategoryController::class, 'adminIndex']);//ok
