@@ -32,7 +32,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::all();
+        $categories = Category::withCount(['products' => fn($q) => $q->where('is_active', true)])->get();
         return CategoryResource::collection($categories);
     }
 
@@ -53,6 +53,7 @@ class CategoryController extends Controller
      */
     public function show(Category $category)
     {
+        $category->loadCount(['products' => fn($q) => $q->where('is_active', true)]);
         return new CategoryResource($category);
     }
 
