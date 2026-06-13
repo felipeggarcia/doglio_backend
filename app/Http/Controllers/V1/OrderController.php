@@ -16,6 +16,9 @@ use Illuminate\Http\Request;
 use App\Support\ApiMessages;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\Output\QRGdImagePNG;
 use Vinkla\Hashids\Facades\Hashids;
 
 class OrderController extends Controller
@@ -118,9 +121,14 @@ class OrderController extends Controller
             'shipping_street' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'max:255'],
             'shipping_number' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'max:20'],
             'shipping_complement' => 'nullable|string|max:100',
+            'shipping_district' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'max:255'],
             'shipping_city' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'max:255'],
             'shipping_state' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'size:2'],
-            'shipping_zip' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'size:8'],
+            'shipping_zip_code' => [Rule::requiredIf(fn () => $request->delivery_type === 'delivery' && !$request->filled('address_id')), 'nullable', 'string', 'size:8'],
+            // Cartão de crédito (opcionais — usados quando disponíveis, senão gerados automaticamente)
+            'card_last_four' => 'nullable|string|size:4',
+            'card_brand'     => 'nullable|string|max:30',
+            'installments'   => 'nullable|integer|min:1|max:12',
         ]);
 
         // Decodifica e valida payment_method_id
@@ -209,22 +217,24 @@ class OrderController extends Controller
 
                 $addressId = $address->id;
                 $shippingData = [
-                    'shipping_street' => $address->street,
-                    'shipping_number' => $address->number,
+                    'shipping_street'   => $address->street,
+                    'shipping_number'   => $address->number,
                     'shipping_complement' => $address->complement,
-                    'shipping_city' => $address->city,
-                    'shipping_state' => $address->state,
-                    'shipping_zip' => $address->zip,
+                    'shipping_district' => $address->district,
+                    'shipping_city'     => $address->city,
+                    'shipping_state'    => $address->state,
+                    'shipping_zip_code' => $address->zip_code,
                 ];
             } else {
                 // Endereço manual
                 $shippingData = [
-                    'shipping_street' => $request->shipping_street,
-                    'shipping_number' => $request->shipping_number,
+                    'shipping_street'   => $request->shipping_street,
+                    'shipping_number'   => $request->shipping_number,
                     'shipping_complement' => $request->shipping_complement,
-                    'shipping_city' => $request->shipping_city,
-                    'shipping_state' => strtoupper($request->shipping_state),
-                    'shipping_zip' => $request->shipping_zip,
+                    'shipping_district' => $request->shipping_district,
+                    'shipping_city'     => $request->shipping_city,
+                    'shipping_state'    => strtoupper($request->shipping_state),
+                    'shipping_zip_code' => $request->shipping_zip_code,
                 ];
             }
         }
@@ -329,6 +339,30 @@ class OrderController extends Controller
             return $order;
         });
 
+        $type = strtolower($paymentMethod->type);
+
+        if ($type === 'pix') {
+            $pixCode = $this->generateFakePixCode((float) $order->total_amount, $order->id);
+            $pixQrCode = $this->generatePixQrCode($pixCode);
+            $order->payment->update([
+                'pix_code'       => $pixCode,
+                'pix_qr_code'    => $pixQrCode,
+                'pix_expires_at' => now()->addHours(24),
+            ]);
+        } elseif ($type === 'boleto') {
+            $order->payment->update([
+                'boleto_code'       => $this->generateFakeBoletoCode((float) $order->total_amount, $order->id),
+                'boleto_expires_at' => now()->addDays(3),
+            ]);
+        } elseif ($type === 'credit_card') {
+            $brands = ['Visa', 'Mastercard', 'Elo', 'Hipercard', 'American Express'];
+            $order->payment->update([
+                'card_last_four' => $request->input('card_last_four', str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT)),
+                'card_brand'     => $request->input('card_brand', $brands[array_rand($brands)]),
+                'installments'   => $request->input('installments', 1),
+            ]);
+        }
+
         $order->load(['orderItems.product.primaryImage', 'payment.paymentMethod']);
 
         return response()->json([
@@ -336,6 +370,48 @@ class OrderController extends Controller
             'message' => ApiMessages::ORDER_CREATED,
             'data' => new OrderResource($order),
         ], 201);
+    }
+
+    private function generateFakeBoletoCode(float $amount, int $orderId): string
+    {
+        // Formato linha digitável: BBBBB.NNNNN BBBBB.NNNNNN BBBBB.NNNNNN K FFFFFFFFVVVVVVVVVV
+        $bank    = '237'; // Bradesco
+        $value   = str_pad((int) round($amount * 100), 10, '0', STR_PAD_LEFT);
+        // Factor de vencimento: dias desde 07/10/1997
+        $factor  = str_pad((int) floor((now()->addDays(3)->timestamp - mktime(0, 0, 0, 10, 7, 1997)) / 86400), 4, '0', STR_PAD_LEFT);
+        $field1  = $bank . '9' . str_pad($orderId, 5, '0', STR_PAD_LEFT) . '.' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
+        $field2  = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT) . '.' . str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+        $field3  = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT) . '.' . str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+        return "{$field1} {$field2} {$field3} 1 {$factor}{$value}";
+    }
+
+    private function generateFakePixCode(float $amount, int $orderId): string
+    {
+        $txId = str_pad($orderId, 16, '0', STR_PAD_LEFT);
+        $amountStr = number_format($amount, 2, '.', '');
+        $amountLen = str_pad(strlen($amountStr), 2, '0', STR_PAD_LEFT);
+        $merchantName = 'DOGLIO STORE';
+        $merchantCity = 'SAO PAULO';
+
+        return "00020101021226720014BR.GOV.BCB.PIX01365f84a4b2-{$orderId}-4c8e-a1d3-9e2f{$txId}5204000053039865{$amountLen}{$amountStr}5802BR" .
+               str_pad(strlen($merchantName), 2, '0', STR_PAD_LEFT) . $merchantName .
+               str_pad(strlen($merchantCity), 2, '0', STR_PAD_LEFT) . $merchantCity .
+               "62160512DOGLIO{$txId}6304ABCD";
+    }
+
+    private function generatePixQrCode(string $pixCode): string
+    {
+        $options = new QROptions;
+        $options->outputInterface = QRGdImagePNG::class;
+        $options->outputBase64 = true;
+        $options->scale = 10;
+        $options->quietzoneSize = 2;
+
+        $dataUri = (new QRCode($options))->render($pixCode);
+
+        // Strip the "data:image/png;base64," prefix for Flutter Image.memory()
+        return substr($dataUri, strpos($dataUri, ',') + 1);
     }
 
     /**

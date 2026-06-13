@@ -15,6 +15,7 @@ class PaymentResource extends JsonResource
             'amount' => number_format($this->amount, 2, '.', ''),
             'payment_method' => new PaymentMethodResource($this->whenLoaded('paymentMethod')),
             'pix_code' => $this->pix_code,
+            'pix_qr_code' => $this->pix_qr_code,
             'pix_expires_at' => $this->pix_expires_at?->toIso8601String(),
             'boleto_code' => $this->boleto_code,
             'boleto_expires_at' => $this->boleto_expires_at?->toIso8601String(),

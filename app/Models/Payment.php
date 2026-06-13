@@ -18,6 +18,7 @@ class Payment extends Model
         'status',
         'amount',
         'pix_code',
+        'pix_qr_code',
         'pix_expires_at',
         'boleto_code',
         'boleto_expires_at',
