@@ -314,6 +314,8 @@ class ProductController extends Controller
             'images.*'       => 'image|mimes:jpeg,png,jpg,webp|max:2048',
             'remove_images'  => 'nullable|array',
             'remove_images.*'=> 'string',
+            'image_order'    => 'nullable|array',
+            'image_order.*'  => 'string',
         ]);
 
         $product->update($request->only([
@@ -393,6 +395,28 @@ class ProductController extends Controller
                     'path' => $path,
                     'order' => $newOrder,
                     'is_primary' => $product->images()->count() === 0 && $index === 0,
+                ]);
+            }
+        }
+
+        if ($request->has('image_order')) {
+            $orderedIds = collect($request->image_order)->map(function ($hashid) {
+                if (!config('app.use_hashids', true)) {
+                    return is_numeric($hashid) ? (int)$hashid : null;
+                }
+                $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashid);
+                return $decoded[0] ?? null;
+            })->filter()->values();
+
+            $productImageIds = $product->images()->pluck('id');
+
+            foreach ($orderedIds as $position => $imageId) {
+                if (!$productImageIds->contains($imageId)) {
+                    continue;
+                }
+                ProductImage::where('id', $imageId)->update([
+                    'order'      => $position,
+                    'is_primary' => $position === 0,
                 ]);
             }
         }
