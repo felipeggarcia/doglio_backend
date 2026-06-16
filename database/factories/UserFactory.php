@@ -39,13 +39,32 @@ class UserFactory extends Factory
         'RS','RO','RR','SC','SP','SE','TO',
     ];
 
+    private static array $prefixes = ['Dr.', 'Dra.', 'Sr.', 'Sra.', 'Srta.', 'Prof.', 'Profa.'];
+
+    private static function emailFromName(string $name): string
+    {
+        $parts  = array_values(array_filter(
+            explode(' ', $name),
+            fn($p) => !in_array($p, self::$prefixes) && strlen(preg_replace('/[^a-z]/i', '', Str::ascii($p))) > 0
+        ));
+        $first  = strtolower(preg_replace('/[^a-z]/i', '', Str::ascii($parts[0] ?? 'usuario')));
+        $last   = strtolower(preg_replace('/[^a-z]/i', '', Str::ascii(end($parts) ?: 'usuario')));
+        $domains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com', 'icloud.com', 'uol.com.br'];
+        $domain  = $domains[array_rand($domains)];
+        $suffix  = fake()->unique()->numberBetween(1, 9999);
+
+        return $first . '.' . $last . $suffix . '@' . $domain;
+    }
+
     public function definition(): array
     {
+        $name = fake('pt_BR')->name();
+
         return [
-            'name'               => fake('pt_BR')->name(),
-            'email'              => fake()->unique()->safeEmail(),
+            'name'               => $name,
+            'email'              => self::emailFromName($name),
             'email_verified_at'  => now(),
-            'password'           => static::$password ??= Hash::make('password'),
+            'password'           => static::$password ??= Hash::make('123456'),
             'remember_token'     => Str::random(10),
             'role'               => 'customer',
             'city'               => fake('pt_BR')->city(),
